@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="it">
+  <head>
+    <meta charset="UTF-8" />
+    <title>p5.js Demon Glitch</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+    <link rel="stylesheet" href="style.css" />
+    <style>
+      body { margin: 0; background: #000; }
+      canvas { display: block; margin: 0 auto; }
+    </style>
+  </head>
+  <body>
+    <header id="main-header">
+      <img id="header-logo" src="HellPulse.png" alt="HellPulse Logo" />
+    </header>
+    <main id="main-area">
+      <div id="demon-frame">
+        <div id="frame-border">
+          <div id="frame-inner">
+            <div id="canvas-container">
+              <!-- La canvas viene creata da p5.js qui dentro -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <footer id="gui-bar">
+      <div id="track-title">HellPulse Visual Generator</div>
+      <div id="controls-row">
+        <div class="slider-group">
+          <label for="background-select">Background</label>
+          <select id="background-select">
+            <option value="bg1.gif">BG 1</option>
+            <option value="bg2.gif">BG 2</option>
+            <option value="bg3.gif">BG 3</option>
+          </select>
+        </div>
+        <div class="slider-group">
+          <label for="subject-select">Soggetto</label>
+          <select id="subject-select">
+            <option value="gengar.png">Gengar</option>
+            <option value="tribalheart.png">TribalHeart</option>
+            <option value="HellPulse.png">HellPulse</option>
+          </select>
+        </div>
+        <div class="slider-group">
+          <label for="volume-slider">Volume</label>
+          <input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.5" />
+        </div>
+        <div class="slider-group">
+          <label for="seek-slider">Track</label>
+          <input id="seek-slider" type="range" min="0" max="1" step="0.001" value="0" />
+        </div>
+        <div class="slider-group">
+          <label for="glitch-slider">Glitch</label>
+          <input id="glitch-slider" class="colorful-glitch" type="range" min="0" max="1" step="0.01" value="0" />
+        </div>
+        <div class="slider-group">
+          <label for="tint-slider">Tint</label>
+          <input id="tint-slider" type="range" min="0" max="1" step="0.01" value="0" />
+          <label style="margin-left:8px;font-size:0.95em;">
+            <input type="checkbox" id="tint-auto-checkbox" style="vertical-align:middle;margin-right:3px;" /> Auto
+          </label>
+        </div>
+      </div>
+    </footer>
+    <script src="sketch.js"></script>
+  </body>
+</html> 
