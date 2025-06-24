@@ -1,6 +1,6 @@
 let subjectList = [
   { file: 'gengar.png', label: 'Gengar' },
-  { file: 'tribalheart.png', label: 'TribalHeart' },
+  { file: 'tribalHeart.png', label: 'TribalHeart' },
   { file: 'HellPulse.png', label: 'HellPulse' }
 ];
 let gengarImg;
@@ -313,8 +313,8 @@ function draw() {
   }
   let imgW = min(width, 260) * scale;
   let imgH = (gengarImg.height / gengarImg.width) * imgW;
-  // Se il soggetto è tribalheart, ingrandisci del 200%
-  if (currentSubject === 'tribalheart.png') {
+  // Se il soggetto è tribalHeart, ingrandisci del 200%
+  if (currentSubject === 'tribalHeart.png') {
     imgW *= 2;
     imgH *= 2;
   }

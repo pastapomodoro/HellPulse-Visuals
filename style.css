@@ -389,9 +389,11 @@ button:active {
   .kofi-card {
     flex-direction: column;
     align-items: center;
-    padding: 14px 8px 12px 8px;
+    padding: 18px 6vw 16px 6vw;
     margin-top: 14px;
     border-radius: 16px;
+    max-width: 98vw;
+    font-size: 1.08em;
   }
   .kofi-logo {
     height: 36px;
@@ -407,8 +409,20 @@ button:active {
     margin-bottom: 4px;
   }
   .kofi-desc {
-    font-size: 0.97em;
+    font-size: 1em;
     line-height: 1.3;
+  }
+  .beta-card {
+    padding: 18px 6vw 16px 6vw;
+    margin: 18px auto 0 auto;
+    max-width: 98vw;
+    font-size: 1.08em;
+  }
+  .beta-title {
+    font-size: 1.15em;
+  }
+  .beta-desc {
+    font-size: 1em;
   }
 }
 
@@ -437,6 +451,8 @@ button:active {
   position: relative;
   backdrop-filter: blur(8px) saturate(1.2);
   animation: kofi-fadein 0.7s cubic-bezier(.4,1.4,.6,1) 1;
+  font-size: 1.13em;
+  line-height: 1.5;
 }
 .kofi-card:hover {
   box-shadow: 0 12px 56px #a0f8, 0 4px 24px #0ff8;
@@ -471,9 +487,9 @@ button:active {
   align-items: flex-start;
 }
 .kofi-title {
-  font-size: 1.5em;
+  font-size: 1.25em;
+  font-weight: bold;
   color: #0ff;
-  font-weight: 900;
   letter-spacing: 1.5px;
   margin-bottom: 8px;
   text-shadow: 0 2px 16px #0ff8, 0 0px 2px #000a;
@@ -556,9 +572,11 @@ input[type=range].colorful-distortion::-ms-thumb {
   position: relative;
   z-index: 10;
   animation: kofi-fadein 0.7s cubic-bezier(.4,1.4,.6,1) 1;
+  font-size: 1.13em;
+  line-height: 1.5;
 }
 .beta-title {
-  font-size: 1.45em;
+  font-size: 1.25em;
   font-weight: 900;
   color: #0ff;
   letter-spacing: 1.5px;
@@ -595,4 +613,19 @@ input[type=range].colorful-distortion::-ms-thumb {
 .github-link:hover {
   color: #0ff;
   text-decoration: underline;
+}
+
+/* Touch-friendly slider: previene lo scroll mentre si trascina */
+input[type=range] {
+  touch-action: none;
+}
+
+/* Migliora la leggibilità del testo nelle card */
+.kofi-card, .beta-card {
+  font-size: 1.13em;
+  line-height: 1.5;
+}
+.kofi-title, .beta-title {
+  font-size: 1.25em;
+  font-weight: bold;
 } 
