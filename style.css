@@ -538,4 +538,61 @@ input[type=range].colorful-distortion::-ms-thumb {
   height: 18px;
   box-shadow: 0 0 8px var(--slider-thumb-color, #fff);
   transition: background 0.2s;
+}
+
+.beta-card {
+  background: linear-gradient(135deg, #181828 60%, #0ff4 100%);
+  border-radius: 22px;
+  box-shadow: 0 8px 40px #0ff4, 0 2px 12px #a0f2;
+  border: 2.5px solid #a0f;
+  padding: 28px 44px 22px 38px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  margin: 32px auto 0 auto;
+  max-width: 520px;
+  color: #fff;
+  position: relative;
+  z-index: 10;
+  animation: kofi-fadein 0.7s cubic-bezier(.4,1.4,.6,1) 1;
+}
+.beta-title {
+  font-size: 1.45em;
+  font-weight: 900;
+  color: #0ff;
+  letter-spacing: 1.5px;
+  margin-bottom: 10px;
+  text-shadow: 0 2px 16px #0ff8, 0 0px 2px #000a;
+}
+.beta-desc {
+  font-size: 1.08em;
+  color: #f0f0f0;
+  font-weight: 400;
+  opacity: 0.97;
+  margin-top: 0;
+  line-height: 1.5;
+  text-shadow: 0 1px 8px #0ff2, 0 0px 1px #000a;
+}
+.insta-link {
+  color: #ff5fa2;
+  font-weight: bold;
+  text-decoration: none;
+  margin-left: 4px;
+  transition: color 0.2s;
+}
+.insta-link:hover {
+  color: #0ff;
+  text-decoration: underline;
+}
+.github-link {
+  color: #fff200;
+  font-weight: bold;
+  text-decoration: none;
+  margin-left: 4px;
+  transition: color 0.2s;
+}
+.github-link:hover {
+  color: #0ff;
+  text-decoration: underline;
 } 

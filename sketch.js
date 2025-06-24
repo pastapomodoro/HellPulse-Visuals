@@ -58,10 +58,13 @@ function setup() {
   tintAutoCheckbox = document.getElementById('tint-auto-checkbox');
 
   if (volumeSlider) {
-    volumeSlider.value = 0.5;
-    sound.setVolume(0.5);
+    // Imposta il valore dello slider in base al volume attuale
+    let initialVolume = sound && sound.getVolume ? sound.getVolume() : 0.5;
+    volumeSlider.value = initialVolume;
+    sound.setVolume(initialVolume);
     volumeSlider.addEventListener('input', () => {
-      sound.setVolume(volumeSlider.value);
+      let v = parseFloat(volumeSlider.value);
+      if (sound && sound.setVolume) sound.setVolume(v);
     });
   }
 
