@@ -66,16 +66,25 @@
             <input type="checkbox" id="tint-auto-checkbox" style="vertical-align:middle;margin-right:3px;" /> Auto
           </label>
         </div>
+        <button id="play-pause-btn" style="font-size:1.1em;padding:7px 22px;margin-left:12px;border-radius:7px;background:#222;color:#fff;border:1px solid #444;cursor:pointer;transition:background 0.2s;display:inline-block;">Play</button>
       </div>
     </footer>
+    <section id="audio-upload-section" style="margin: 32px auto; max-width: 600px; text-align: center;">
+      <div class="audio-card" style="background:#181818;border-radius:12px;padding:18px 20px 20px 20px;box-shadow:0 2px 12px #0003;">
+        <div style="font-size:1.15em;font-weight:600;margin-bottom:8px;">Carica un file audio locale</div>
+        <input id="audio-upload-input" type="file" accept="audio/*" style="margin-bottom:10px;color:#fff;" />
+        <div id="audio-upload-filename" style="font-size:0.95em;color:#aaa;"></div>
+      </div>
+    </section>
     <section id="kofi-section">
       <div class="kofi-card">
         <div class="kofi-card-desktop">
           <div class="kofi-card-texts">
             <span class="kofi-title">Supportami su <b>Ko-fi</b></span>
             <span class="kofi-desc">Tutti i miei progettini sono autogestiti e finanziati di tasca mia.<br/>Qualsiasi donazione è più che apprezzata!</span>
-            <a href="https://ko-fi.com/ugiex" target="_blank" rel="noopener" class="kofi-link kofi-btn-desktop">
-              <img src="https://storage.ko-fi.com/cdn/kofi5.png" alt="Supportami su Ko-fi" class="kofi-logo" />
+            <a href="https://ko-fi.com/ugiex" target="_blank" rel="noopener" class="kofi-btn-blue">
+              <svg class="kofi-cup" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" fill="none"/><path d="M19.5 8.5H21C21.8284 8.5 22.5 9.17157 22.5 10V11.5C22.5 13.9853 20.4853 16 18 16H17.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="2.5" y="7.5" width="15" height="10" rx="5" fill="white" stroke="white" stroke-width="1.5"/><rect x="4.5" y="9.5" width="11" height="6" rx="3" fill="#FF5E5B"/><circle cx="8.5" cy="12.5" r="1" fill="white"/><circle cx="12.5" cy="12.5" r="1" fill="white"/></svg>
+              Vai al mio Ko-fi
             </a>
           </div>
         </div>
@@ -99,5 +108,17 @@
       </div>
     </section>
     <script src="sketch.js"></script>
+    <script>
+      // Audio upload filename display
+      document.getElementById('audio-upload-input').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        const label = document.getElementById('audio-upload-filename');
+        if (file) {
+          label.textContent = `File selezionato: ${file.name}`;
+        } else {
+          label.textContent = '';
+        }
+      });
+    </script>
   </body>
 </html> 

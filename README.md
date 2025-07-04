@@ -68,3 +68,39 @@ Apri `index.html` o visita la repo per vedere una demo.
 ---
 
 **Contribuisci, personalizza e divertiti!**
+
+# Avvio locale del progetto
+
+Per motivi di sicurezza dei browser moderni, **non puoi aprire direttamente index.html** (file:///...) e aspettarti che immagini, audio e altri asset funzionino. Devi avviare un server locale.
+
+## Metodo 1: Python (consigliato, già installato su Mac)
+
+1. Apri il Terminale.
+2. Vai nella cartella del progetto:
+   ```sh
+   cd /Users/ugi/Desktop/progettini/p5js_demon_glitch
+   ```
+3. Avvia il server:
+   ```sh
+   python3 -m http.server 8000
+   ```
+4. Apri il browser su [http://localhost:8000](http://localhost:8000)
+
+## Metodo 2: Node.js (se installato)
+
+1. Apri il Terminale nella cartella del progetto.
+2. Avvia:
+   ```sh
+   npx http-server -p 8000
+   ```
+3. Vai su [http://localhost:8000](http://localhost:8000)
+
+## Metodo 3: VS Code (Live Server)
+
+1. Installa l’estensione "Live Server".
+2. Clicca su "Go Live" in basso a destra.
+
+---
+
+**Perché?**
+I browser bloccano il caricamento di asset locali per motivi di sicurezza (CORS). Usando un server locale, tutto funziona sempre!

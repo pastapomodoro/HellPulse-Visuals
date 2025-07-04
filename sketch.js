@@ -37,12 +37,18 @@ function preload() {
 
 function setup() {
   let container = document.getElementById('canvas-container');
+  let w = 1280;
+  let h = 720;
   if (container) {
     let rect = container.getBoundingClientRect();
-    createCanvas(rect.width, rect.height).parent('canvas-container');
+    w = Math.min(rect.width, 1280);
+    h = Math.min(rect.height, 720);
+    createCanvas(w, h).parent('canvas-container');
   } else {
-    createCanvas(windowWidth, windowHeight);
+    createCanvas(w, h);
   }
+  noSmooth();
+  frameRate(45);
   imageMode(CENTER);
   amp = new p5.Amplitude();
 
@@ -138,6 +144,26 @@ function setup() {
       tintAuto = tintAutoCheckbox.checked;
     });
   }
+
+  // --- Audio upload: carica file locale ---
+  const audioInput = document.getElementById('audio-upload-input');
+  if (audioInput) {
+    audioInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        if (sound && sound.isPlaying()) sound.stop();
+        if (sound) sound.disconnect();
+        loadSound(file, (loadedSound) => {
+          sound = loadedSound;
+          amp.setInput(sound);
+          sound.setVolume(parseFloat(volumeSlider.value) || 0.5);
+          sound.play();
+        }, (err) => {
+          alert('Errore nel caricamento del file audio.');
+        });
+      }
+    });
+  }
 }
 
 function loadNewSubject(filename) {
@@ -218,23 +244,25 @@ function draw() {
   if (sound.isPlaying() && level > 0.18 && random() < 0.13 + 0.18*level) {
     let pCount = 2 + int(level*8);
     for (let i = 0; i < pCount; i++) {
-      let angle = random(TWO_PI);
-      let speed = random(2, 5 + 10*level);
-      let col = color(
-        180 + 60*sin(frameCount*0.1 + i),
-        100 + 120*cos(frameCount*0.13 + i*2),
-        255,
-        180
-      );
-      particles.push({
-        x: width/2,
-        y: height/2,
-        vx: cos(angle)*speed,
-        vy: sin(angle)*speed,
-        alpha: 180,
-        col: col,
-        size: random(4, 10 + 10*level)
-      });
+      if (particles.length < 120) { // Limite massimo particelle
+        let angle = random(TWO_PI);
+        let speed = random(2, 5 + 10*level);
+        let col = color(
+          180 + 60*sin(frameCount*0.1 + i),
+          100 + 120*cos(frameCount*0.13 + i*2),
+          255,
+          180
+        );
+        particles.push({
+          x: width/2,
+          y: height/2,
+          vx: cos(angle)*speed,
+          vy: sin(angle)*speed,
+          alpha: 180,
+          col: col,
+          size: random(4, 10 + 10*level)
+        });
+      }
     }
   }
   for (let i = particles.length - 1; i >= 0; i--) {
@@ -353,6 +381,12 @@ function draw() {
     tintIntensity = (sin(tintAutoTime * TWO_PI) + 1) / 2;
     if (tintSlider) tintSlider.value = tintIntensity;
   }
+
+  // --- FPS counter ---
+  fill(255,0,0);
+  noStroke();
+  textSize(16);
+  text('FPS: ' + nf(frameRate(), 2, 1), 10, 22);
 }
 
 function togglePlayPause() {

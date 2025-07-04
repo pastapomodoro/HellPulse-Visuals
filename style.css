@@ -273,6 +273,32 @@ canvas {
   box-shadow: 0 1px 4px #0ff6;
 }
 
+/* Play/Pause button responsive style */
+#play-pause-btn {
+  font-size: 1.1em;
+  padding: 7px 22px;
+  margin-left: 12px;
+  border-radius: 7px;
+  background: #222;
+  color: #fff;
+  border: 1px solid #444;
+  cursor: pointer;
+  transition: background 0.2s;
+  display: inline-block;
+}
+#play-pause-btn:hover, #play-pause-btn:active {
+  background: #444;
+}
+@media (max-width: 600px) {
+  #play-pause-btn {
+    width: 100%;
+    margin: 12px 0 0 0;
+    font-size: 1.2em;
+    padding: 12px 0;
+    display: block;
+  }
+}
+
 .slider-group {
   display: flex;
   flex-direction: row;
@@ -693,4 +719,56 @@ html, body {
     font-size: 1.1em;
     background: #ff5fa2;
   }
+}
+
+.kofi-btn-blue {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 14px;
+  padding: 10px 28px;
+  background: #FF5E5B;
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.13em;
+  border: none;
+  border-radius: 24px;
+  box-shadow: 0 2px 8px #ff5e5b44;
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  cursor: pointer;
+}
+.kofi-btn-blue:hover {
+  background: #ff8e8b;
+  color: #fff;
+  box-shadow: 0 4px 16px #ff5e5bcc;
+}
+.kofi-btn-blue .kofi-cup {
+  width: 1.5em;
+  height: 1.5em;
+  margin-right: 6px;
+  vertical-align: middle;
+} 
+
+/* Audio upload section styles */
+#audio-upload-section .audio-card {
+  background: #181818;
+  border-radius: 12px;
+  padding: 18px 20px 20px 20px;
+  box-shadow: 0 2px 12px #0003;
+  margin: 0 auto;
+  max-width: 600px;
+}
+#audio-upload-section input[type="file"] {
+  color: #fff;
+  background: #222;
+  border-radius: 6px;
+  border: 1px solid #333;
+  padding: 6px 10px;
+  font-size: 1em;
+}
+#audio-upload-filename {
+  font-size: 0.95em;
+  color: #aaa;
+  margin-top: 4px;
 } 
