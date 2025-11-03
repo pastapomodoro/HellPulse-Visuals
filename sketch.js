@@ -9,9 +9,15 @@ let sound;
 let amp;
 let playing = false;
 let volumeSlider, seekSlider, playPauseBtn, subjectSelect, backgroundSelect;
+let fpsToggle;
+let effectsToggle;
+let muteToggle;
 let lastSeekUpdate = 0;
-let glitchLines = [];
 let particles = [];
+let subjectBuffer = null; // buffer riutilizzato per il soggetto
+let effectsEnabled = true; // stato degli effetti (particles, spirali, distorsione)
+let previousVolume = 0.5; // volume salvato prima del mute
+let isMuted = false;
 
 let backgroundList = [
   { file: 'bg1.gif', label: 'BG 1' },
@@ -21,18 +27,33 @@ let backgroundList = [
 let currentBackground = 'bg1.gif';
 let bgImg;
 
-let glitchSlider, distortionSlider, tintSlider;
+let glitchSlider, distortionSlider;
 let glitchIntensity = 0;
 let distortionIntensity = 0;
-let tintIntensity = 0;
-let tintAutoCheckbox;
-let tintAuto = false;
-let tintAutoTime = 0;
+let showFPS = false;
+
+// Sync (BPM) state
+let syncToggle;
+let bpmReadout;
+let syncEnabled = false;
+let estimatedBPM = 120;
+let amplitudeHistory = [];
+let amplitudeTimes = [];
+let bpmLastEstimateMs = 0;
+let syncAnchorMs = 0;
+let lastWasPlaying = false;
+
+// Simple image caches to avoid reloading assets repeatedly
+let subjectImageCache = {};
+let backgroundImageCache = {};
 
 function preload() {
   bgImg = loadImage('bg/' + currentBackground);
   gengarImg = loadImage('subj/' + currentSubject);
   sound = loadSound('sound.mp3');
+  // Seed caches with initial assets
+  backgroundImageCache[currentBackground] = bgImg;
+  subjectImageCache[currentSubject] = gengarImg;
 }
 
 function setup() {
@@ -43,14 +64,17 @@ function setup() {
     let rect = container.getBoundingClientRect();
     w = Math.min(rect.width, 1280);
     h = Math.min(rect.height, 720);
+    pixelDensity(1);
     createCanvas(w, h).parent('canvas-container');
   } else {
+    pixelDensity(1);
     createCanvas(w, h);
   }
   noSmooth();
   frameRate(45);
   imageMode(CENTER);
   amp = new p5.Amplitude();
+  amp.smooth(0.8);
 
   // Collega controlli
   volumeSlider = document.getElementById('volume-slider');
@@ -60,17 +84,40 @@ function setup() {
   backgroundSelect = document.getElementById('background-select');
   glitchSlider = document.getElementById('glitch-slider');
   distortionSlider = document.getElementById('distortion-slider');
-  tintSlider = document.getElementById('tint-slider');
-  tintAutoCheckbox = document.getElementById('tint-auto-checkbox');
+  fpsToggle = document.getElementById('fps-toggle');
+  syncToggle = document.getElementById('sync-toggle');
+  bpmReadout = document.getElementById('bpm-readout');
+  effectsToggle = document.getElementById('effects-toggle');
+  muteToggle = document.getElementById('mute-toggle');
 
   if (volumeSlider) {
     // Imposta il valore dello slider in base al volume attuale
     let initialVolume = sound && sound.getVolume ? sound.getVolume() : 0.5;
     volumeSlider.value = initialVolume;
+    previousVolume = initialVolume;
     sound.setVolume(initialVolume);
     volumeSlider.addEventListener('input', () => {
-      let v = parseFloat(volumeSlider.value);
-      if (sound && sound.setVolume) sound.setVolume(v);
+      if (!isMuted) {
+        let v = parseFloat(volumeSlider.value);
+        if (sound && sound.setVolume) sound.setVolume(v);
+        previousVolume = v; // salva il volume quando viene modificato manualmente
+      }
+    });
+  }
+
+  if (muteToggle) {
+    muteToggle.checked = false;
+    muteToggle.addEventListener('change', () => {
+      isMuted = muteToggle.checked;
+      if (isMuted) {
+        // Salva il volume corrente e muta
+        previousVolume = parseFloat(volumeSlider.value) || 0.5;
+        if (sound && sound.setVolume) sound.setVolume(0);
+      } else {
+        // Ripristina il volume salvato
+        if (sound && sound.setVolume) sound.setVolume(previousVolume);
+        volumeSlider.value = previousVolume;
+      }
     });
   }
 
@@ -106,8 +153,26 @@ function setup() {
   if (backgroundSelect) {
     backgroundSelect.value = currentBackground;
     backgroundSelect.addEventListener('change', () => {
-      currentBackground = backgroundSelect.value;
+      const value = backgroundSelect.value;
+      if (value === 'custom') {
+        // Lo script HTML gestirà l'apertura del file input
+        return;
+      }
+      currentBackground = value;
       loadNewBackground(currentBackground);
+    });
+  }
+  
+  if (subjectSelect) {
+    subjectSelect.value = currentSubject;
+    subjectSelect.addEventListener('change', () => {
+      const value = subjectSelect.value;
+      if (value === 'custom') {
+        // Lo script HTML gestirà l'apertura del file input
+        return;
+      }
+      currentSubject = value;
+      loadNewSubject(currentSubject);
     });
   }
 
@@ -131,17 +196,32 @@ function setup() {
       setSliderThumbColor(distortionSlider, c);
     });
   }
-  if (tintSlider) {
-    tintSlider.value = 0;
-    tintSlider.addEventListener('input', () => {
-      tintIntensity = parseFloat(tintSlider.value);
+
+  if (fpsToggle) {
+    fpsToggle.checked = false;
+    fpsToggle.addEventListener('change', () => {
+      showFPS = fpsToggle.checked;
     });
   }
 
-  if (tintAutoCheckbox) {
-    tintAutoCheckbox.checked = false;
-    tintAutoCheckbox.addEventListener('change', () => {
-      tintAuto = tintAutoCheckbox.checked;
+  if (syncToggle) {
+    syncToggle.checked = false;
+    syncToggle.addEventListener('change', () => {
+      syncEnabled = syncToggle.checked;
+      // re-ancora il clock sul momento di attivazione
+      syncAnchorMs = millis();
+    });
+  }
+
+  if (effectsToggle) {
+    effectsToggle.checked = true; // di default attivo
+    effectsEnabled = true;
+    effectsToggle.addEventListener('change', () => {
+      effectsEnabled = effectsToggle.checked;
+      // Se gli effetti vengono disattivati, pulisci le particles esistenti
+      if (!effectsEnabled) {
+        particles = [];
+      }
     });
   }
 
@@ -164,14 +244,130 @@ function setup() {
       }
     });
   }
+
+  // --- Background upload: carica file immagine locale ---
+  const backgroundInput = document.getElementById('background-upload-input');
+  if (backgroundInput) {
+    backgroundInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        // Verifica che sia un file immagine
+        if (!file.type.match('image.*')) {
+          alert('Per favore seleziona un file immagine.');
+          if (backgroundSelect) backgroundSelect.value = currentBackground;
+          return;
+        }
+        // Crea un URL locale per l'immagine
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const imgUrl = event.target.result;
+          // Carica l'immagine usando p5.js
+          loadImage(imgUrl, (img) => {
+            bgImg = img;
+            // Salva nell'cache con una chiave speciale per il background custom
+            backgroundImageCache['custom'] = img;
+            // Imposta il select su "custom" per mantenere la selezione
+            if (backgroundSelect) {
+              backgroundSelect.value = 'custom';
+              currentBackground = 'custom';
+            }
+          }, (err) => {
+            alert('Errore nel caricamento del file immagine.');
+            if (backgroundSelect) backgroundSelect.value = currentBackground;
+          });
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // Se non c'è file, ripristina il valore precedente
+        if (backgroundSelect) backgroundSelect.value = currentBackground;
+      }
+    });
+  }
+
+  // --- Subject upload: carica file PNG locale come soggetto ---
+  const subjectInput = document.getElementById('subject-upload-input');
+  if (subjectInput) {
+    subjectInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        // Verifica che sia un file immagine
+        if (!file.type.match('image.*')) {
+          alert('Per favore seleziona un file immagine.');
+          if (subjectSelect) subjectSelect.value = currentSubject;
+          return;
+        }
+        // Crea un URL locale per l'immagine
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const imgUrl = event.target.result;
+          // Carica l'immagine usando p5.js
+          loadImage(imgUrl, (img) => {
+            gengarImg = img;
+            // Salva nell'cache con una chiave speciale per il soggetto custom
+            subjectImageCache['custom'] = img;
+            // Imposta il select su "custom" per mantenere la selezione
+            if (subjectSelect) {
+              subjectSelect.value = 'custom';
+              currentSubject = 'custom';
+            }
+            // Forza il ricalcolo del buffer alla prossima draw con le nuove dimensioni
+            subjectBuffer = null;
+          }, (err) => {
+            alert('Errore nel caricamento del file immagine.');
+            if (subjectSelect) subjectSelect.value = currentSubject;
+          });
+        };
+        reader.readAsDataURL(file);
+      } else {
+        // Se non c'è file, ripristina il valore precedente
+        if (subjectSelect) subjectSelect.value = currentSubject;
+      }
+    });
+  }
 }
 
 function loadNewSubject(filename) {
-  gengarImg = loadImage('subj/' + filename);
+  if (filename === 'custom') {
+    // Se è custom, usa l'immagine dalla cache se presente
+    if (subjectImageCache['custom']) {
+      gengarImg = subjectImageCache['custom'];
+    }
+    // Forza il ricalcolo del buffer alla prossima draw con le nuove dimensioni
+    subjectBuffer = null;
+    return;
+  }
+  if (subjectImageCache[filename]) {
+    gengarImg = subjectImageCache[filename];
+  } else {
+    loadImage('subj/' + filename, (img) => {
+      subjectImageCache[filename] = img;
+      gengarImg = img;
+    });
+  }
+  // Forza il ricalcolo del buffer alla prossima draw con le nuove dimensioni
+  subjectBuffer = null;
 }
 
 function loadNewBackground(filename) {
-  bgImg = loadImage('bg/' + filename);
+  if (filename === 'none') {
+    bgImg = null;
+    return;
+  }
+  if (filename === 'custom') {
+    // Se è custom, usa l'immagine dalla cache se presente
+    if (backgroundImageCache['custom']) {
+      bgImg = backgroundImageCache['custom'];
+    }
+    return;
+  }
+  if (backgroundImageCache[filename]) {
+    bgImg = backgroundImageCache[filename];
+  } else {
+    loadImage('bg/' + filename, (img) => {
+      backgroundImageCache[filename] = img;
+      bgImg = img;
+    });
+  }
 }
 
 function setSliderThumbColor(slider, color) {
@@ -214,37 +410,79 @@ function draw() {
   let tintG = map(level, 0, 0.4, 255, 60, true);
   let tintB = map(level, 0, 0.4, 255, 180, true);
 
-  // --- Spirali colorate dietro ---
-  push();
-  translate(width/2, height/2);
-  let spiralCount = 2;
-  for (let s = 0; s < spiralCount; s++) {
-    let spiralRot = frameCount * 0.01 * (s%2===0?1:-1) + s*PI/spiralCount + level*2;
-    let spiralColor = color(
-      180 + 60*sin(frameCount*0.02 + s),
-      100 + 120*cos(frameCount*0.015 + s*2),
-      255,
-      80 + 80*level
-    );
-    noFill();
-    stroke(spiralColor);
-    strokeWeight(2.5 + 2*level);
-    beginShape();
-    for (let a = 0; a < TWO_PI*2; a += 0.12) {
-      let r = 90 + 60*s + 30*level + 18*sin(a*3 + frameCount*0.03 + s);
-      let x = cos(a + spiralRot) * r;
-      let y = sin(a + spiralRot) * r;
-      vertex(x, y);
-    }
-    endShape();
+  // --- Sync BPM update & pulse ---
+  let nowMs = millis();
+  let isPlaying = sound && sound.isLoaded() && sound.isPlaying();
+  if (!lastWasPlaying && isPlaying) {
+    syncAnchorMs = nowMs;
   }
-  pop();
+  lastWasPlaying = isPlaying;
+  
+  // Calcola sempre il BPM quando c'è musica in riproduzione
+  if (isPlaying) {
+    amplitudeHistory.push(level);
+    amplitudeTimes.push(nowMs);
+    // mantieni ~8s di storico
+    while (amplitudeTimes.length && nowMs - amplitudeTimes[0] > 8000) {
+      amplitudeTimes.shift();
+      amplitudeHistory.shift();
+    }
+    if (nowMs - bpmLastEstimateMs > 2500 && amplitudeHistory.length > 30) {
+      let bpm = estimateBPMFromEnvelope(amplitudeHistory, amplitudeTimes, 60, 180);
+      if (bpm) estimatedBPM = bpm;
+      bpmLastEstimateMs = nowMs;
+      if (bpmReadout) bpmReadout.textContent = Math.round(estimatedBPM) + ' BPM';
+    }
+    
+    // Applica sempre il pulse basato sul BPM quando c'è musica
+    let beatPeriodMs = 60000 / Math.max(estimatedBPM, 1);
+    let phase = ((nowMs - syncAnchorMs) % beatPeriodMs) / beatPeriodMs; // 0..1
+    let pulse = beatPulseShape(phase);
+    // Pulse più forte e visibile: combinazione di pulse BPM e livello audio
+    let bpmPulse = 1 + 0.45 * pulse; // intensità pulsazione BPM aumentata
+    let audioBoost = 1 + 0.08 * level; // leggero boost basato sul volume per più dinamismo
+    scale *= bpmPulse * audioBoost; // combinazione per effetto più pronunciato
+  } else {
+    if (bpmReadout && !syncEnabled) bpmReadout.textContent = '-- BPM';
+    // Mantieni il BPM visibile se sync è attivo anche quando non c'è musica
+    if (syncEnabled && bpmReadout && estimatedBPM) {
+      bpmReadout.textContent = Math.round(estimatedBPM) + ' BPM';
+    }
+  }
+
+  // --- Spirali colorate dietro ---
+  if (effectsEnabled) {
+    push();
+    translate(width/2, height/2);
+    let spiralCount = 2;
+    for (let s = 0; s < spiralCount; s++) {
+      let spiralRot = frameCount * 0.01 * (s%2===0?1:-1) + s*PI/spiralCount + level*2;
+      let spiralColor = color(
+        180 + 60*sin(frameCount*0.02 + s),
+        100 + 120*cos(frameCount*0.015 + s*2),
+        255,
+        80 + 80*level
+      );
+      noFill();
+      stroke(spiralColor);
+      strokeWeight(2.5 + 2*level);
+      beginShape();
+      for (let a = 0; a < TWO_PI*2; a += 0.12) {
+        let r = 90 + 60*s + 30*level + 18*sin(a*3 + frameCount*0.03 + s);
+        let x = cos(a + spiralRot) * r;
+        let y = sin(a + spiralRot) * r;
+        vertex(x, y);
+      }
+      endShape();
+    }
+    pop();
+  }
 
   // --- Particles a tempo ---
-  if (sound.isPlaying() && level > 0.18 && random() < 0.13 + 0.18*level) {
-    let pCount = 2 + int(level*8);
+  if (effectsEnabled && sound.isPlaying() && level > 0.18 && random() < 0.08 + 0.14*level) {
+    let pCount = 1 + int(level*6);
     for (let i = 0; i < pCount; i++) {
-      if (particles.length < 120) { // Limite massimo particelle
+      if (particles.length < 90) { // Limite massimo particelle
         let angle = random(TWO_PI);
         let speed = random(2, 5 + 10*level);
         let col = color(
@@ -265,52 +503,30 @@ function draw() {
       }
     }
   }
-  for (let i = particles.length - 1; i >= 0; i--) {
-    let p = particles[i];
-    fill(p.col);
-    noStroke();
-    ellipse(p.x, p.y, p.size);
-    p.x += p.vx;
-    p.y += p.vy;
-    p.vx *= 0.97;
-    p.vy *= 0.97;
-    p.alpha -= 3;
-    p.col.setAlpha(p.alpha);
-    if (p.alpha <= 0) particles.splice(i, 1);
+  if (effectsEnabled) {
+    for (let i = particles.length - 1; i >= 0; i--) {
+      let p = particles[i];
+      fill(p.col);
+      noStroke();
+      ellipse(p.x, p.y, p.size);
+      p.x += p.vx;
+      p.y += p.vy;
+      p.vx *= 0.97;
+      p.vy *= 0.97;
+      p.alpha -= 3;
+      p.col.setAlpha(p.alpha);
+      if (p.alpha <= 0) particles.splice(i, 1);
+    }
+  } else {
+    // Pulisci le particles se gli effetti sono disattivati
+    particles = [];
   }
 
-  // --- Effetti glitch soft ---
-  let glitchFactor = glitchIntensity; // 0 = normale, 1 = massimo
-  if (sound.isPlaying() && frameCount % 7 === 0 && random() < (0.5 + glitchFactor) * level) {
-    for (let i = 0; i < 1 + int((level + glitchFactor) * 3); i++) {
-      let x1 = random(width*0.2, width*0.8);
-      let y1 = random(height*0.2, height*0.8);
-      let x2 = x1 + random(-40 - 60*glitchFactor, 40 + 60*glitchFactor);
-      let y2 = y1 + random(-3 - 10*glitchFactor, 3 + 10*glitchFactor);
-      glitchLines.push({ x1, y1, x2, y2, alpha: 100 + 60*level + 100*glitchFactor });
-    }
-  }
-  for (let i = glitchLines.length - 1; i >= 0; i--) {
-    let l = glitchLines[i];
-    stroke(0, 255, 255, l.alpha);
-    strokeWeight(2);
-    line(l.x1, l.y1, l.x2, l.y2);
-    l.alpha -= 5;
-    if (l.alpha <= 0) glitchLines.splice(i, 1);
-  }
-  if (random() < 0.02 + 0.05*level) {
-    fill(255, 0, 255, 30 + 60*level);
-    noStroke();
-    let w = random(10, 60);
-    let h = random(3, 12);
-    rect(random(width*0.2, width*0.8), random(height*0.2, height*0.8), w, h);
-    noFill();
-    stroke(255);
-  }
+  // Glitch visivo applicato dopo il disegno dell'immagine (chromatic aberration + slice jitter)
 
   // --- Effetto distorsione raro ---
   let distortionFactor = distortionIntensity; // 0 = normale, 1 = massimo
-  if (sound.isPlaying() && level > 0.22 && random() < (0.018 + 0.03*level + 0.05*distortionFactor)) {
+  if (effectsEnabled && sound.isPlaying() && level > 0.22 && random() < (0.012 + 0.028*level + 0.045*distortionFactor)) {
     let y = int(random(height*0.25, height*0.75));
     let h = int(random(12, 32 + 60*distortionFactor));
     let shift = int(random(-30 - 80*distortionFactor, 30 + 80*distortionFactor));
@@ -325,44 +541,50 @@ function draw() {
     drawingContext.shadowBlur = 0;
   }
 
-  // --- Immagine principale ---
-  push();
-  translate(width / 2, height / 2);
-  rotate(rot);
-  // Tint personalizzato spettro
-  if (tintIntensity === 0) {
-    noTint();
-  } else {
-    let spectrumCol = getSpectrumColor(tintIntensity);
-    let customTintR = red(spectrumCol);
-    let customTintG = green(spectrumCol);
-    let customTintB = blue(spectrumCol);
-    tint(customTintR, customTintG, customTintB, 255);
-  }
-  let imgW = min(width, 260) * scale;
-  let imgH = (gengarImg.height / gengarImg.width) * imgW;
-  // Se il soggetto è tribalHeart, ingrandisci del 200%
-  if (currentSubject === 'tribalHeart.png') {
-    imgW *= 2;
-    imgH *= 2;
-  }
-  if (distortionIntensity > 0.7) {
-    // Effetto onda: distorce l'immagine principale
-    let tiles = int(8 + 16 * distortionIntensity);
-    let tileH = imgH / tiles;
-    for (let i = 0; i < tiles; i++) {
-      let sy = i * tileH;
-      let sw = imgW;
-      let sh = tileH;
-      let dx = sin(frameCount*0.08 + i*0.5) * 12 * distortionIntensity;
-      image(gengarImg, dx, sy - imgH/2, sw, sh, 0, sy, gengarImg.width, sh);
+  // --- Immagine principale con glitch allineato ---
+  if (gengarImg) {
+    push();
+    translate(width / 2, height / 2);
+    rotate(rot);
+
+    let imgW = min(width, 260) * scale;
+    let imgH = (gengarImg.height / gengarImg.width) * imgW;
+    if (currentSubject === 'tribalHeart.png') { imgW *= 2; imgH *= 2; }
+
+    // prepara buffer del soggetto (dimensione fissa sull'immagine sorgente, non dipende dalla scala)
+    if (!subjectBuffer) {
+      let bw = Math.max(1, gengarImg ? gengarImg.width : 256);
+      let bh = Math.max(1, gengarImg ? gengarImg.height : 256);
+      subjectBuffer = createGraphics(int(bw), int(bh));
+      subjectBuffer.pixelDensity(1);
+      subjectBuffer.imageMode(CENTER);
     }
-  } else {
-    image(gengarImg, 0, 0, imgW, imgH);
+    subjectBuffer.clear();
+    subjectBuffer.image(gengarImg, subjectBuffer.width/2, subjectBuffer.height/2, subjectBuffer.width, subjectBuffer.height);
+
+    // slice jitter sul buffer (non sul canvas intero)
+    applySliceJitterToBuffer(subjectBuffer, glitchIntensity, level);
+
+    // Disegno base senza tint
+    noTint();
+    image(subjectBuffer, 0, 0, imgW, imgH);
+
+    // chromatic aberration leggero, allineato al soggetto
+    if (glitchIntensity > 0) {
+      let off = (1 + level * 2) * glitchIntensity * 6;
+      tint(255, 0, 0, 70 + 100 * glitchIntensity);
+      image(subjectBuffer, -off, 0, imgW, imgH);
+      tint(0, 255, 255, 70 + 100 * glitchIntensity);
+      image(subjectBuffer, off, 0, imgW, imgH);
+      noTint();
+    }
+
+    pop();
   }
-  pop();
   noTint();
   drawingContext.shadowBlur = 0;
+
+  // Glitch già applicato al buffer del soggetto
 
   // --- Slider seek ---
   if (sound.isLoaded() && sound.isPlaying() && seekSlider && millis() - lastSeekUpdate > 100) {
@@ -375,18 +597,13 @@ function draw() {
     playPauseBtn.textContent = (sound.isPlaying() ? 'Pause' : 'Play');
   }
 
-  // Tint automatico
-  if (tintAuto) {
-    tintAutoTime += deltaTime * 0.00018; // velocità ciclo
-    tintIntensity = (sin(tintAutoTime * TWO_PI) + 1) / 2;
-    if (tintSlider) tintSlider.value = tintIntensity;
-  }
-
   // --- FPS counter ---
-  fill(255,0,0);
-  noStroke();
-  textSize(16);
-  text('FPS: ' + nf(frameRate(), 2, 1), 10, 22);
+  if (showFPS) {
+    fill(255,0,0);
+    noStroke();
+    textSize(16);
+    text('FPS: ' + nf(frameRate(), 2, 1), 10, 22);
+  }
 }
 
 function togglePlayPause() {
@@ -408,3 +625,103 @@ function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
   }
 } 
+
+// --- Minimal glitch helpers ---
+function applySliceJitterToBuffer(gfx, intensity, level) {
+  if (!gfx || !intensity || intensity <= 0) return;
+  let prob = 0.02 + 0.10 * intensity + 0.08 * level;
+  if (random() < prob) {
+    let slices = 1 + int(2 * intensity + 2 * level);
+    for (let i = 0; i < slices; i++) {
+      let y = int(random(gfx.height * 0.1, gfx.height * 0.9));
+      let h = int(random(4, 14 + intensity * 24));
+      let shift = int(random(-8 - 24 * intensity, 8 + 24 * intensity));
+      gfx.copy(0, y, gfx.width, h, shift, y, gfx.width, h);
+    }
+  }
+}
+
+function applyChromaticAberration(intensity, level) {
+  if (!intensity || intensity <= 0) return;
+  let snap = get();
+  let off = (1 + level * 2) * intensity * 6;
+  push();
+  blendMode(ADD);
+  tint(255, 0, 0, 80 + 100 * intensity);
+  image(snap, -off, 0, width, height);
+  tint(0, 255, 255, 80 + 100 * intensity);
+  image(snap, off, 0, width, height);
+  pop();
+}
+
+function applySliceJitter(intensity, level) {
+  if (!intensity || intensity <= 0) return;
+  let prob = 0.02 + 0.10 * intensity + 0.08 * level;
+  if (random() < prob) {
+    let slices = 1 + int(2 * intensity + 2 * level);
+    for (let i = 0; i < slices; i++) {
+      let y = int(random(height * 0.1, height * 0.9));
+      let h = int(random(4, 14 + intensity * 24));
+      let shift = int(random(-8 - 24 * intensity, 8 + 24 * intensity));
+      copy(0, y, width, h, shift, y, width, h);
+    }
+  }
+}
+
+// --- BPM estimation ---
+function estimateBPMFromEnvelope(levels, times, bpmMin, bpmMax) {
+  if (!levels || levels.length < 24) return null;
+  // normalizza (rimuovi media)
+  let n = levels.length;
+  let mean = 0;
+  for (let i = 0; i < n; i++) mean += levels[i];
+  mean /= n;
+  let sig = new Array(n);
+  let varSum = 0;
+  for (let i = 0; i < n; i++) { sig[i] = levels[i] - mean; varSum += sig[i]*sig[i]; }
+  if (varSum <= 1e-6) return null;
+
+  // intervallo lag in ms
+  let minPeriod = 60000 / Math.max(bpmMax, 1); // ms
+  let maxPeriod = 60000 / Math.max(bpmMin, 1);
+  // converti lag in numero di campioni (usiamo tempi reali, non frameRate fisso)
+  let bestLag = -1, bestCorr = -1;
+  // prova ~60 lag uniformi tra min e max
+  for (let k = 0; k < 60; k++) {
+    let periodMs = minPeriod + (maxPeriod - minPeriod) * (k / 59);
+    // trova lag come numero di campioni medio per questo periodo
+    // stimiamo delta medio tra campioni
+    let dt = (times[n-1] - times[0]) / Math.max(n-1,1);
+    if (dt <= 0) continue;
+    let lag = Math.max(1, Math.round(periodMs / dt));
+    if (lag >= n-2) continue;
+    // autocorrelazione per questo lag
+    let corr = 0;
+    for (let i = lag; i < n; i++) {
+      corr += sig[i] * sig[i-lag];
+    }
+    corr /= (n - lag);
+    if (corr > bestCorr) { bestCorr = corr; bestLag = lag; }
+  }
+  if (bestLag <= 0) return null;
+  let dtAvg = (times[n-1] - times[0]) / Math.max(n-1,1);
+  let periodEstimate = dtAvg * bestLag;
+  let bpm = 60000 / Math.max(periodEstimate, 1);
+  // clamp range
+  bpm = constrain(bpm, bpmMin, bpmMax);
+  return bpm;
+}
+
+function beatPulseShape(phase) {
+  // 0..1 -> picco rapido e pronunciato con decadimento morbido
+  // Forma più aggressiva per un pulse più visibile
+  if (phase < 0.15) {
+    // Snap rapido nella prima parte del beat
+    let snapPhase = phase / 0.15;
+    return pow(snapPhase, 0.3); // curva più aggressiva per il picco
+  } else {
+    // Decadimento esponenziale più veloce dopo il picco
+    let decayPhase = (phase - 0.15) / 0.85;
+    return pow(1 - decayPhase, 2.5); // decay più veloce e pronunciato
+  }
+}

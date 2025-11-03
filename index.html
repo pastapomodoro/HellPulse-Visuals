@@ -2,21 +2,16 @@
 <html lang="it">
   <head>
     <meta charset="UTF-8" />
-    <title>p5.js Demon Glitch</title>
+    <title>HellPulse Visuals</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
-    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="style.css?v=2" />
     <link rel="icon" type="image/png" href="HellPulse.png" />
-    <style>
-      body { margin: 0; background: #000; }
-      canvas { display: block; margin: 0 auto; }
-    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    
   </head>
   <body>
-    <header id="main-header">
-      <img id="header-logo" src="HellPulse.png" alt="HellPulse Logo" />
-    </header>
     <main id="main-area">
       <div id="demon-frame">
         <div id="frame-border">
@@ -31,93 +26,251 @@
     <footer id="gui-bar">
       <div id="track-title">HellPulse Visual Generator</div>
       <div id="controls-row">
-        <div class="slider-group">
-          <label for="background-select">Background</label>
-          <select id="background-select">
-            <option value="bg1.gif">BG 1</option>
-            <option value="bg2.gif">BG 2</option>
-            <option value="bg3.gif">BG 3</option>
+        <!-- Controlli principali sempre visibili -->
+        <div class="control-group">
+          <button id="play-pause-btn" class="control-btn primary">
+            <i class="fas fa-play"></i> <span>Play</span>
+          </button>
+        </div>
+        
+        <div class="control-group">
+          <select id="background-select" class="control-select">
+            <option value="none">🖼️ Nessuno</option>
+            <option value="bg1.gif">🖼️ BG 1</option>
+            <option value="bg2.gif">🖼️ BG 2</option>
+            <option value="bg3.gif">🖼️ BG 3</option>
+            <option value="custom">📁 Custom...</option>
           </select>
+          <input id="background-upload-input" type="file" accept="image/*" style="display:none;" />
         </div>
-        <div class="slider-group">
-          <label for="subject-select">Soggetto</label>
-          <select id="subject-select">
-            <option value="gengar.png">Gengar</option>
-            <option value="tribalHeart.png">TribalHeart</option>
-            <option value="HellPulse.png">HellPulse</option>
+        
+        <div class="control-group">
+          <select id="subject-select" class="control-select">
+            <option value="gengar.png">🎨 Gengar</option>
+            <option value="tribalHeart.png">🎨 TribalHeart</option>
+            <option value="HellPulse.png">🎨 HellPulse</option>
+            <option value="custom">📁 Custom...</option>
           </select>
+          <input id="subject-upload-input" type="file" accept="image/*" style="display:none;" />
         </div>
-        <div class="slider-group">
-          <label for="volume-slider">Volume</label>
-          <input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.5" />
-        </div>
-        <div class="slider-group">
-          <label for="seek-slider">Track</label>
-          <input id="seek-slider" type="range" min="0" max="1" step="0.001" value="0" />
-        </div>
-        <div class="slider-group">
-          <label for="glitch-slider">Glitch</label>
-          <input id="glitch-slider" class="colorful-glitch" type="range" min="0" max="1" step="0.01" value="0" />
-        </div>
-        <div class="slider-group">
-          <label for="tint-slider">Tint</label>
-          <input id="tint-slider" type="range" min="0" max="1" step="0.01" value="0" />
-          <label style="margin-left:8px;font-size:0.95em;">
-            <input type="checkbox" id="tint-auto-checkbox" style="vertical-align:middle;margin-right:3px;" /> Auto
+        
+        <!-- Toggle compatti -->
+        <div class="control-group">
+          <label class="toggle-label">
+            <input type="checkbox" id="sync-toggle" />
+            <span class="toggle-text"><i class="fas fa-sync-alt"></i> Sync</span>
+            <span id="bpm-readout" class="bpm-badge">-- BPM</span>
           </label>
         </div>
-        <button id="play-pause-btn" style="font-size:1.1em;padding:7px 22px;margin-left:12px;border-radius:7px;background:#222;color:#fff;border:1px solid #444;cursor:pointer;transition:background 0.2s;display:inline-block;">Play</button>
+        
+        <div class="control-group">
+          <label class="toggle-label">
+            <input type="checkbox" id="effects-toggle" checked />
+            <span class="toggle-text"><i class="fas fa-star"></i> Effects</span>
+          </label>
+        </div>
+        
+        <!-- Tendine collapsibili per slider -->
+        <div class="control-group collapsible">
+          <button class="collapsible-btn" data-target="volume-panel">
+            <i class="fas fa-volume-up"></i> Volume <i class="fas fa-chevron-down"></i>
+          </button>
+          <div class="collapsible-content" id="volume-panel">
+            <label style="display:block;margin-bottom:8px;color:#ddd;font-size:0.9em;">Volume</label>
+            <input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.5" style="width:100%;margin-bottom:12px;" />
+            <label class="toggle-label compact">
+              <input type="checkbox" id="mute-toggle" />
+              <span class="toggle-text"><i class="fas fa-volume-mute"></i> Mute</span>
+            </label>
+          </div>
+        </div>
+        
+        <div class="control-group collapsible">
+          <button class="collapsible-btn" data-target="track-panel">
+            <i class="fas fa-music"></i> Track <i class="fas fa-chevron-down"></i>
+          </button>
+          <div class="collapsible-content" id="track-panel">
+            <label style="display:block;margin-bottom:8px;color:#ddd;font-size:0.9em;">Seleziona Track</label>
+            <select id="track-select" class="control-select" style="width:100%;margin-bottom:12px;">
+              <option value="default">🎵 Default</option>
+              <option value="custom">📁 Custom...</option>
+            </select>
+            <label style="display:block;margin-bottom:8px;margin-top:16px;color:#ddd;font-size:0.9em;">Posizione</label>
+            <input id="seek-slider" type="range" min="0" max="1" step="0.001" value="0" style="width:100%;" />
+            <input id="audio-upload-input" type="file" accept="audio/*" style="display:none;" />
+          </div>
+        </div>
+        
+        <div class="control-group collapsible">
+          <button class="collapsible-btn" data-target="glitch-panel">
+            <i class="fas fa-bolt"></i> Glitch <i class="fas fa-chevron-down"></i>
+          </button>
+          <div class="collapsible-content" id="glitch-panel">
+            <label style="display:block;margin-bottom:8px;color:#ddd;font-size:0.9em;">Intensità Glitch</label>
+            <input id="glitch-slider" class="colorful-glitch" type="range" min="0" max="1" step="0.01" value="0" style="width:100%;" />
+          </div>
+        </div>
       </div>
     </footer>
-    <section id="audio-upload-section" style="margin: 32px auto; max-width: 600px; text-align: center;">
-      <div class="audio-card" style="background:#181818;border-radius:12px;padding:18px 20px 20px 20px;box-shadow:0 2px 12px #0003;">
-        <div style="font-size:1.15em;font-weight:600;margin-bottom:8px;">Carica un file audio locale</div>
-        <input id="audio-upload-input" type="file" accept="audio/*" style="margin-bottom:10px;color:#fff;" />
-        <div id="audio-upload-filename" style="font-size:0.95em;color:#aaa;"></div>
-      </div>
-    </section>
-    <section id="kofi-section">
-      <div class="kofi-card">
-        <div class="kofi-card-desktop">
-          <div class="kofi-card-texts">
-            <span class="kofi-title">Supportami su <b>Ko-fi</b></span>
-            <span class="kofi-desc">Tutti i miei progettini sono autogestiti e finanziati di tasca mia.<br/>Qualsiasi donazione è più che apprezzata!</span>
-            <a href="https://ko-fi.com/ugiex" target="_blank" rel="noopener" class="kofi-btn-blue">
-              <svg class="kofi-cup" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="24" height="24" fill="none"/><path d="M19.5 8.5H21C21.8284 8.5 22.5 9.17157 22.5 10V11.5C22.5 13.9853 20.4853 16 18 16H17.5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="2.5" y="7.5" width="15" height="10" rx="5" fill="white" stroke="white" stroke-width="1.5"/><rect x="4.5" y="9.5" width="11" height="6" rx="3" fill="#FF5E5B"/><circle cx="8.5" cy="12.5" r="1" fill="white"/><circle cx="12.5" cy="12.5" r="1" fill="white"/></svg>
-              Vai al mio Ko-fi
-            </a>
+    <section id="info-section">
+      <div class="info-card">
+        <div class="info-content">
+          <div class="info-title">HellPulse Visuals</div>
+          <div class="info-desc">
+            Realizzato da <a href="https://instagram.com/eugeniobellini" target="_blank" rel="noopener" class="insta-link">@eugeniobellini</a>. 
+            Segui <a href="https://instagram.com/benzodiazepics" target="_blank" rel="noopener" class="insta-link">benzodiazepics</a>. 
+            <a href="https://github.com/pastapomodoro/HellPulse-Visuals" target="_blank" rel="noopener" class="github-link">GitHub</a>.
+            Supportami su <a href="https://ko-fi.com/ugiex" target="_blank" rel="noopener" class="kofi-link-compact">Ko-fi</a>.
           </div>
         </div>
       </div>
     </section>
-    <section id="beta-section">
-      <div class="beta-card">
-        <div class="beta-title">🚧 HellPulse Visuals è in Beta! 🚧</div>
-        <div class="beta-desc">
-          <span style="font-size:1em;">Realizzato da <a href="https://instagram.com/eugeniobellini" target="_blank" rel="noopener" class="insta-link">@eugeniobellini</a></span><br/>
-          <b>Prossimamente:</b> potrai caricare le tue immagini e background direttamente dall'app tramite upload!<br/>
-          <br/>
-          <b>HellPulse</b> è un progetto amatoriale.<br/>
-          Seguimi su Instagram:
-          <a href="https://instagram.com/benzodiazepics" target="_blank" rel="noopener" class="insta-link">benzodiazepics</a>
-          <br/><br/>
-          <span style="font-size:1em;">Il progetto è <b>open source</b>! Puoi già customizzare e contribuire su
-            <a href="https://github.com/pastapomodoro/HellPulse-Visuals" target="_blank" rel="noopener" class="github-link">GitHub</a> 
-          </span>
-        </div>
-      </div>
-    </section>
-    <script src="sketch.js"></script>
+    <script src="sketch.js?v=2"></script>
     <script>
-      // Audio upload filename display
-      document.getElementById('audio-upload-input').addEventListener('change', function(e) {
-        const file = e.target.files[0];
-        const label = document.getElementById('audio-upload-filename');
-        if (file) {
-          label.textContent = `File selezionato: ${file.name}`;
-        } else {
-          label.textContent = '';
-        }
+      // Assicurati che il DOM sia caricato
+      document.addEventListener('DOMContentLoaded', function() {
+        
+      // Gestione tendine collapsibili
+      document.querySelectorAll('.collapsible-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+          const targetId = this.getAttribute('data-target');
+          const panel = document.getElementById(targetId);
+          const icon = this.querySelector('.fa-chevron-down');
+          
+          if (panel.style.display === 'block') {
+            panel.style.display = 'none';
+            icon.classList.remove('fa-chevron-up');
+            icon.classList.add('fa-chevron-down');
+          } else {
+            // Chiudi tutte le altre tendine
+            document.querySelectorAll('.collapsible-content').forEach(p => {
+              p.style.display = 'none';
+            });
+            document.querySelectorAll('.collapsible-btn .fa-chevron-up').forEach(i => {
+              i.classList.remove('fa-chevron-up');
+              i.classList.add('fa-chevron-down');
+            });
+            
+            // Apri quella cliccata
+            panel.style.display = 'block';
+            icon.classList.remove('fa-chevron-down');
+            icon.classList.add('fa-chevron-up');
+          }
+        });
+      });
+      
+      // Gestione Custom per Background
+      const backgroundSelect = document.getElementById('background-select');
+      const backgroundUploadInput = document.getElementById('background-upload-input');
+      if (backgroundSelect && backgroundUploadInput) {
+        backgroundSelect.addEventListener('change', function(e) {
+          e.stopPropagation();
+          if (this.value === 'custom') {
+            setTimeout(() => {
+              backgroundUploadInput.click();
+            }, 10);
+          }
+        });
+        backgroundUploadInput.addEventListener('change', function(e) {
+          const file = e.target.files[0];
+          if (file && backgroundSelect) {
+            // Il caricamento sarà gestito da sketch.js
+            // Qui solo aggiorniamo il select per mostrare che è stato caricato
+            const option = backgroundSelect.querySelector('option[value="custom"]');
+            if (option) {
+              const shortName = file.name.length > 20 ? file.name.substring(0, 17) + '...' : file.name;
+              option.textContent = '📁 Custom: ' + shortName;
+            }
+            // Assicurati che il select rimanga su "custom"
+            backgroundSelect.value = 'custom';
+          } else {
+            // Se non c'è file, ripristina il select
+            if (backgroundSelect.value === 'custom') {
+              backgroundSelect.value = 'none';
+            }
+          }
+        });
+      }
+      
+      // Gestione Custom per Subject
+      const subjectSelect = document.getElementById('subject-select');
+      const subjectUploadInput = document.getElementById('subject-upload-input');
+      if (subjectSelect && subjectUploadInput) {
+        subjectSelect.addEventListener('change', function(e) {
+          e.stopPropagation();
+          if (this.value === 'custom') {
+            setTimeout(() => {
+              subjectUploadInput.click();
+            }, 10);
+          }
+        });
+        subjectUploadInput.addEventListener('change', function(e) {
+          const file = e.target.files[0];
+          if (file && subjectSelect) {
+            // Il caricamento sarà gestito da sketch.js
+            // Qui solo aggiorniamo il select per mostrare che è stato caricato
+            const option = subjectSelect.querySelector('option[value="custom"]');
+            if (option) {
+              const shortName = file.name.length > 20 ? file.name.substring(0, 17) + '...' : file.name;
+              option.textContent = '📁 Custom: ' + shortName;
+            }
+            // Assicurati che il select rimanga su "custom"
+            subjectSelect.value = 'custom';
+          } else {
+            // Se non c'è file, ripristina il select
+            if (subjectSelect.value === 'custom') {
+              subjectSelect.value = 'gengar.png';
+            }
+          }
+        });
+      }
+      
+      // Gestione Custom per Track
+      const trackSelect = document.getElementById('track-select');
+      const audioUploadInput = document.getElementById('audio-upload-input');
+      if (trackSelect && audioUploadInput) {
+        trackSelect.addEventListener('change', function(e) {
+          e.stopPropagation();
+          if (this.value === 'custom') {
+            setTimeout(() => {
+              audioUploadInput.click();
+            }, 10);
+          }
+        });
+        audioUploadInput.addEventListener('change', function(e) {
+          const file = e.target.files[0];
+          if (file && trackSelect) {
+            // Il caricamento sarà gestito da sketch.js
+            // Qui solo aggiorniamo il select per mostrare che è stato caricato
+            const option = trackSelect.querySelector('option[value="custom"]');
+            if (option) {
+              const shortName = file.name.length > 20 ? file.name.substring(0, 17) + '...' : file.name;
+              option.textContent = '📁 Custom: ' + shortName;
+            }
+            // Assicurati che il select rimanga su "custom"
+            trackSelect.value = 'custom';
+          } else {
+            // Se non c'è file, ripristina il select
+            if (trackSelect.value === 'custom') {
+              trackSelect.value = 'default';
+            }
+          }
+        });
+      }
+      
+      // Aggiorna icona play/pause
+      const playPauseBtn = document.getElementById('play-pause-btn');
+      if (playPauseBtn) {
+        const icon = playPauseBtn.querySelector('i');
+        const text = playPauseBtn.querySelector('span');
+        // Questo sarà aggiornato dinamicamente da sketch.js
+        const observer = new MutationObserver(() => {
+          const isPlaying = text.textContent === 'Pause';
+          icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
+        });
+        observer.observe(text, { childList: true, characterData: true, subtree: true });
+      }
+      
       });
     </script>
   </body>
