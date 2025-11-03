@@ -951,6 +951,33 @@ canvas { border-radius: 8px; box-shadow: none; }
 .insta-link, .github-link { color: var(--accent); text-decoration: none; }
 .insta-link:hover, .github-link:hover { text-decoration: underline; }
 
+/* Nascondi anteprime immagini */
+input[type="file"] {
+  display: none !important;
+}
+
+input[type="file"]::-webkit-file-upload-button {
+  display: none !important;
+}
+
+/* Nascondi eventuali anteprime create dal browser */
+img[src^="data:image"],
+img[src^="blob:"] {
+  display: none !important;
+}
+
+/* Assicurati che gli input file siano completamente nascosti */
+#subject-upload-input,
+#background-upload-input,
+#audio-upload-input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
 /* Info card compatta */
 #info-section {
   width: 100%;
