@@ -5,11 +5,21 @@
     <title>HellPulse Visuals</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
-    <link rel="stylesheet" href="style.css?v=2" />
+    <!-- Using HTML5 Audio + Web Audio API for better compatibility -->
+    <link rel="stylesheet" href="style.css?v=10" />
+    <style>
+      /* Critical: Hide file inputs but keep them functional */
+      #audio-upload-input,
+      #background-upload-input,
+      #subject-upload-input {
+        position: absolute !important;
+        left: -9999px !important;
+        top: -9999px !important;
+        opacity: 0 !important;
+      }
+    </style>
     <link rel="icon" type="image/png" href="HellPulse.png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    
   </head>
   <body>
     <main id="main-area">
@@ -17,132 +27,224 @@
         <div id="frame-border">
           <div id="frame-inner">
             <div id="canvas-container">
-              <!-- La canvas viene creata da p5.js qui dentro -->
+              <!-- Canvas creata da p5.js -->
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div id="gui-bar">
+        <div id="track-title"></div>
+        <div id="controls-row">
+          <!-- Play/Pause -->
+          <div class="control-group">
+            <button id="play-pause-btn" class="control-btn primary">
+              <i class="fas fa-play"></i> <span>Play</span>
+            </button>
+          </div>
+          
+          <!-- Track Upload -->
+          <div class="control-group">
+            <label for="audio-upload-input" class="control-btn file-label" id="upload-track-btn">
+              <i class="fas fa-upload"></i> <span>File</span>
+            </label>
+            <input id="audio-upload-input" type="file" accept="audio/*" />
+          </div>
+          
+          <!-- SoundCloud -->
+          <div class="control-group">
+            <button id="soundcloud-btn" class="control-btn soundcloud">
+              <i class="fab fa-soundcloud"></i> SoundCloud
+            </button>
+          </div>
+          
+          <!-- Background Select -->
+          <div class="control-group select-with-upload">
+            <select id="background-select" class="control-select">
+              <option value="none">Sfondo: Nessuno</option>
+              <option value="bg1.gif">Sfondo: BG 1</option>
+              <option value="bg2.gif">Sfondo: BG 2</option>
+              <option value="bg3.gif">Sfondo: BG 3</option>
+            </select>
+            <label for="background-upload-input" class="upload-icon" title="Carica sfondo custom">
+              <i class="fas fa-folder-open"></i>
+            </label>
+            <input id="background-upload-input" type="file" accept="image/*" />
+          </div>
+          
+          <!-- Subject Select -->
+          <div class="control-group select-with-upload">
+            <select id="subject-select" class="control-select">
+              <option value="gengar.png">Soggetto: Gengar</option>
+              <option value="tribalHeart.png">Soggetto: Heart</option>
+              <option value="HellPulse.png">Soggetto: HellPulse</option>
+            </select>
+            <label for="subject-upload-input" class="upload-icon" title="Carica soggetto custom">
+              <i class="fas fa-folder-open"></i>
+            </label>
+            <input id="subject-upload-input" type="file" accept="image/*" />
+          </div>
+          
+          <!-- Toggles -->
+          <div class="control-group">
+            <label class="toggle-label">
+              <input type="checkbox" id="effects-toggle" checked />
+              <span class="toggle-text">FX</span>
+            </label>
+          </div>
+          
+          <div class="control-group">
+            <label class="toggle-label">
+              <input type="checkbox" id="sync-toggle" />
+              <span class="toggle-text">Sync</span>
+              <span id="bpm-readout" class="bpm-badge">--</span>
+            </label>
+          </div>
+          
+          <!-- Volume -->
+          <div class="control-group collapsible">
+            <button class="collapsible-btn" data-target="volume-panel">
+              <i class="fas fa-volume-up"></i> Vol
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="collapsible-content" id="volume-panel">
+              <label>Volume</label>
+              <input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.5" />
+              <label class="toggle-label" style="margin-top: 12px;">
+                <input type="checkbox" id="mute-toggle" />
+                <span class="toggle-text">Mute</span>
+              </label>
+            </div>
+          </div>
+          
+          <!-- Glitch -->
+          <div class="control-group collapsible">
+            <button class="collapsible-btn" data-target="glitch-panel">
+              <i class="fas fa-bolt"></i> Glitch
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="collapsible-content" id="glitch-panel">
+              <label>Intensità Glitch</label>
+              <input id="glitch-slider" class="colorful-glitch" type="range" min="0" max="1" step="0.01" value="0" />
+            </div>
+          </div>
+          
+          <!-- Seek -->
+          <div class="control-group collapsible">
+            <button class="collapsible-btn" data-target="seek-panel">
+              <i class="fas fa-sliders-h"></i> Seek
+              <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="collapsible-content" id="seek-panel">
+              <label>Posizione Track</label>
+              <input id="seek-slider" type="range" min="0" max="1" step="0.001" value="0" />
             </div>
           </div>
         </div>
       </div>
     </main>
-    <footer id="gui-bar">
-      <div id="track-title">HellPulse Visual Generator</div>
-      <div id="controls-row">
-        <!-- Controlli principali sempre visibili -->
-        <div class="control-group">
-          <button id="play-pause-btn" class="control-btn primary">
-            <i class="fas fa-play"></i> <span>Play</span>
+    
+    <!-- SoundCloud Modal -->
+    <div id="soundcloud-modal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3><i class="fab fa-soundcloud"></i> Carica da SoundCloud</h3>
+          <button id="modal-close" class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p class="modal-hint">Incolla un link di una traccia SoundCloud</p>
+          <input type="text" id="soundcloud-url" placeholder="https://soundcloud.com/artist/track" />
+          <button id="soundcloud-load" class="control-btn primary">
+            <i class="fas fa-play"></i> Carica e Riproduci
           </button>
+          <p class="modal-note">
+            <i class="fas fa-info-circle"></i> Nota: per restrizioni CORS, il visualizzatore reagirà al BPM stimato. Per reazioni audio complete, usa un file locale.
+          </p>
+          <p id="soundcloud-error" class="modal-error"></p>
         </div>
-        
-        <div class="control-group">
-          <select id="background-select" class="control-select">
-            <option value="none">🖼️ Nessuno</option>
-            <option value="bg1.gif">🖼️ BG 1</option>
-            <option value="bg2.gif">🖼️ BG 2</option>
-            <option value="bg3.gif">🖼️ BG 3</option>
-            <option value="custom">📁 Custom...</option>
-          </select>
-          <input id="background-upload-input" type="file" accept="image/*" style="display:none;" />
+      </div>
+    </div>
+    
+    <!-- SoundCloud Widget API (hidden) -->
+    <iframe id="soundcloud-widget" allow="autoplay" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;"></iframe>
+    
+    <!-- Footer -->
+    <footer id="site-footer">
+      <div class="footer-content">
+        <div class="footer-brand">
+          <img src="HellPulse.png" alt="HellPulse" class="footer-logo" />
+          <span class="footer-title">HellPulse Visuals</span>
         </div>
-        
-        <div class="control-group">
-          <select id="subject-select" class="control-select">
-            <option value="gengar.png">🎨 Gengar</option>
-            <option value="tribalHeart.png">🎨 TribalHeart</option>
-            <option value="HellPulse.png">🎨 HellPulse</option>
-            <option value="custom">📁 Custom...</option>
-          </select>
-          <input id="subject-upload-input" type="file" accept="image/*" style="display:none;" />
-        </div>
-        
-        <!-- Toggle compatti -->
-        <div class="control-group">
-          <label class="toggle-label">
-            <input type="checkbox" id="sync-toggle" />
-            <span class="toggle-text"><i class="fas fa-sync-alt"></i> Sync</span>
-            <span id="bpm-readout" class="bpm-badge">-- BPM</span>
-          </label>
-        </div>
-        
-        <div class="control-group">
-          <label class="toggle-label">
-            <input type="checkbox" id="effects-toggle" checked />
-            <span class="toggle-text"><i class="fas fa-star"></i> Effects</span>
-          </label>
-        </div>
-        
-        <!-- Tendine collapsibili per slider -->
-        <div class="control-group collapsible">
-          <button class="collapsible-btn" data-target="volume-panel">
-            <i class="fas fa-volume-up"></i> Volume <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="collapsible-content" id="volume-panel">
-            <label style="display:block;margin-bottom:8px;color:#ddd;font-size:0.9em;">Volume</label>
-            <input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.5" style="width:100%;margin-bottom:12px;" />
-            <label class="toggle-label compact">
-              <input type="checkbox" id="mute-toggle" />
-              <span class="toggle-text"><i class="fas fa-volume-mute"></i> Mute</span>
-            </label>
-          </div>
-        </div>
-        
-        <div class="control-group collapsible">
-          <button class="collapsible-btn" data-target="track-panel">
-            <i class="fas fa-music"></i> Track <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="collapsible-content" id="track-panel">
-            <label style="display:block;margin-bottom:8px;color:#ddd;font-size:0.9em;">Seleziona Track</label>
-            <select id="track-select" class="control-select" style="width:100%;margin-bottom:12px;">
-              <option value="default">🎵 Default</option>
-              <option value="custom">📁 Custom...</option>
-            </select>
-            <label style="display:block;margin-bottom:8px;margin-top:16px;color:#ddd;font-size:0.9em;">Posizione</label>
-            <input id="seek-slider" type="range" min="0" max="1" step="0.001" value="0" style="width:100%;" />
-            <input id="audio-upload-input" type="file" accept="audio/*" style="display:none;" />
-          </div>
-        </div>
-        
-        <div class="control-group collapsible">
-          <button class="collapsible-btn" data-target="glitch-panel">
-            <i class="fas fa-bolt"></i> Glitch <i class="fas fa-chevron-down"></i>
-          </button>
-          <div class="collapsible-content" id="glitch-panel">
-            <label style="display:block;margin-bottom:8px;color:#ddd;font-size:0.9em;">Intensità Glitch</label>
-            <input id="glitch-slider" class="colorful-glitch" type="range" min="0" max="1" step="0.01" value="0" style="width:100%;" />
-          </div>
+        <nav class="footer-links">
+          <a href="https://github.com/pastapomodoro/HellPulse-Visuals" target="_blank" rel="noopener">
+            <i class="fab fa-github"></i> GitHub
+          </a>
+          <a href="https://instagram.com/benzodiazepics" target="_blank" rel="noopener">
+            <i class="fab fa-instagram"></i> Instagram
+          </a>
+          <a href="https://ko-fi.com/ugiex" target="_blank" rel="noopener">
+            <i class="fas fa-heart"></i> Support
+          </a>
+        </nav>
+        <div class="footer-credit">
+          Made by <a href="https://instagram.com/eugeniobellini" target="_blank" rel="noopener">@eugeniobellini</a>
         </div>
       </div>
     </footer>
-    <section id="info-section">
-      <div class="info-card">
-        <div class="info-content">
-          <div class="info-title">HellPulse Visuals</div>
-          <div class="info-desc">
-            Realizzato da <a href="https://instagram.com/eugeniobellini" target="_blank" rel="noopener" class="insta-link">@eugeniobellini</a>. 
-            Segui <a href="https://instagram.com/benzodiazepics" target="_blank" rel="noopener" class="insta-link">benzodiazepics</a>. 
-            <a href="https://github.com/pastapomodoro/HellPulse-Visuals" target="_blank" rel="noopener" class="github-link">GitHub</a>.
-            Supportami su <a href="https://ko-fi.com/ugiex" target="_blank" rel="noopener" class="kofi-link-compact">Ko-fi</a>.
-          </div>
-        </div>
-      </div>
-    </section>
-    <script src="sketch.js?v=2"></script>
+    
+    <script src="sketch.js?v=20260123i"></script>
     <script>
-      // Assicurati che il DOM sia caricato
       document.addEventListener('DOMContentLoaded', function() {
+        // Hide file inputs (CSS backup)
+        ['audio-upload-input', 'background-upload-input', 'subject-upload-input'].forEach(id => {
+          const el = document.getElementById(id);
+          if (el) el.style.display = 'none';
+        });
         
-      // Gestione tendine collapsibili
-      document.querySelectorAll('.collapsible-btn').forEach(btn => {
-        btn.addEventListener('click', function() {
-          const targetId = this.getAttribute('data-target');
-          const panel = document.getElementById(targetId);
-          const icon = this.querySelector('.fa-chevron-down');
-          
-          if (panel.style.display === 'block') {
-            panel.style.display = 'none';
-            icon.classList.remove('fa-chevron-up');
-            icon.classList.add('fa-chevron-down');
-          } else {
-            // Chiudi tutte le altre tendine
+        // Collapsible panels
+        document.querySelectorAll('.collapsible-btn').forEach(btn => {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const targetId = this.getAttribute('data-target');
+            const panel = document.getElementById(targetId);
+            const icon = this.querySelector('.fa-chevron-down, .fa-chevron-up');
+            
+            // Close all other panels
+            document.querySelectorAll('.collapsible-content').forEach(p => {
+              if (p.id !== targetId) {
+                p.style.display = 'none';
+              }
+            });
+            document.querySelectorAll('.collapsible-btn').forEach(b => {
+              if (b !== this) {
+                const i = b.querySelector('.fa-chevron-up');
+                if (i) {
+                  i.classList.remove('fa-chevron-up');
+                  i.classList.add('fa-chevron-down');
+                }
+              }
+            });
+            
+            // Toggle current panel
+            if (panel.style.display === 'block') {
+              panel.style.display = 'none';
+              if (icon) {
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+              }
+            } else {
+              panel.style.display = 'block';
+              if (icon) {
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+              }
+            }
+          });
+        });
+        
+        // Close panels when clicking outside
+        document.addEventListener('click', function(e) {
+          if (!e.target.closest('.collapsible')) {
             document.querySelectorAll('.collapsible-content').forEach(p => {
               p.style.display = 'none';
             });
@@ -150,128 +252,86 @@
               i.classList.remove('fa-chevron-up');
               i.classList.add('fa-chevron-down');
             });
-            
-            // Apri quella cliccata
-            panel.style.display = 'block';
-            icon.classList.remove('fa-chevron-down');
-            icon.classList.add('fa-chevron-up');
           }
         });
-      });
-      
-      // Gestione Custom per Background
-      const backgroundSelect = document.getElementById('background-select');
-      const backgroundUploadInput = document.getElementById('background-upload-input');
-      if (backgroundSelect && backgroundUploadInput) {
-        backgroundSelect.addEventListener('change', function(e) {
-          e.stopPropagation();
-          if (this.value === 'custom') {
-            setTimeout(() => {
-              backgroundUploadInput.click();
-            }, 10);
-          }
-        });
-        backgroundUploadInput.addEventListener('change', function(e) {
-          const file = e.target.files[0];
-          if (file && backgroundSelect) {
-            // Il caricamento sarà gestito da sketch.js
-            // Qui solo aggiorniamo il select per mostrare che è stato caricato
-            const option = backgroundSelect.querySelector('option[value="custom"]');
-            if (option) {
-              const shortName = file.name.length > 20 ? file.name.substring(0, 17) + '...' : file.name;
-              option.textContent = '📁 Custom: ' + shortName;
+        
+        // Upload Track - using label so click is handled natively
+        const uploadTrackLabel = document.getElementById('upload-track-btn');
+        const audioUploadInput = document.getElementById('audio-upload-input');
+        if (audioUploadInput && uploadTrackLabel) {
+          audioUploadInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+              // Update label text to show loaded file
+              const shortName = file.name.length > 15 ? file.name.substring(0, 12) + '...' : file.name;
+              uploadTrackLabel.innerHTML = '<i class="fas fa-music"></i> <span>' + shortName + '</span>';
             }
-            // Assicurati che il select rimanga su "custom"
-            backgroundSelect.value = 'custom';
-          } else {
-            // Se non c'è file, ripristina il select
-            if (backgroundSelect.value === 'custom') {
-              backgroundSelect.value = 'none';
+          });
+        }
+        
+        // Background Upload - using label so click is handled natively
+        const backgroundSelect = document.getElementById('background-select');
+        const backgroundUploadInput = document.getElementById('background-upload-input');
+        if (backgroundUploadInput) {
+          backgroundUploadInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && backgroundSelect) {
+              // Add custom option if not exists
+              let customOpt = backgroundSelect.querySelector('option[value="custom"]');
+              if (!customOpt) {
+                customOpt = document.createElement('option');
+                customOpt.value = 'custom';
+                backgroundSelect.appendChild(customOpt);
+              }
+              const shortName = file.name.length > 12 ? file.name.substring(0, 9) + '...' : file.name;
+              customOpt.textContent = 'Sfondo: ' + shortName;
+              backgroundSelect.value = 'custom';
+              // Trigger change event for sketch.js
+              backgroundSelect.dispatchEvent(new Event('change'));
             }
-          }
-        });
-      }
-      
-      // Gestione Custom per Subject
-      const subjectSelect = document.getElementById('subject-select');
-      const subjectUploadInput = document.getElementById('subject-upload-input');
-      if (subjectSelect && subjectUploadInput) {
-        subjectSelect.addEventListener('change', function(e) {
-          e.stopPropagation();
-          if (this.value === 'custom') {
-            setTimeout(() => {
-              subjectUploadInput.click();
-            }, 10);
-          }
-        });
-        subjectUploadInput.addEventListener('change', function(e) {
-          const file = e.target.files[0];
-          if (file && subjectSelect) {
-            // Il caricamento sarà gestito da sketch.js
-            // Qui solo aggiorniamo il select per mostrare che è stato caricato
-            const option = subjectSelect.querySelector('option[value="custom"]');
-            if (option) {
-              const shortName = file.name.length > 20 ? file.name.substring(0, 17) + '...' : file.name;
-              option.textContent = '📁 Custom: ' + shortName;
+          });
+        }
+        
+        // Subject Upload - using label so click is handled natively
+        const subjectSelect = document.getElementById('subject-select');
+        const subjectUploadInput = document.getElementById('subject-upload-input');
+        if (subjectUploadInput) {
+          subjectUploadInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file && subjectSelect) {
+              // Add custom option if not exists
+              let customOpt = subjectSelect.querySelector('option[value="custom"]');
+              if (!customOpt) {
+                customOpt = document.createElement('option');
+                customOpt.value = 'custom';
+                subjectSelect.appendChild(customOpt);
+              }
+              const shortName = file.name.length > 12 ? file.name.substring(0, 9) + '...' : file.name;
+              customOpt.textContent = 'Soggetto: ' + shortName;
+              subjectSelect.value = 'custom';
+              // Trigger change event for sketch.js
+              subjectSelect.dispatchEvent(new Event('change'));
             }
-            // Assicurati che il select rimanga su "custom"
-            subjectSelect.value = 'custom';
-          } else {
-            // Se non c'è file, ripristina il select
-            if (subjectSelect.value === 'custom') {
-              subjectSelect.value = 'gengar.png';
+          });
+        }
+        
+        // Play/Pause icon update
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        if (playPauseBtn) {
+          const observer = new MutationObserver(() => {
+            const span = playPauseBtn.querySelector('span');
+            const icon = playPauseBtn.querySelector('i');
+            if (span && icon) {
+              const isPlaying = span.textContent === 'Pause';
+              icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
             }
+          });
+          const span = playPauseBtn.querySelector('span');
+          if (span) {
+            observer.observe(span, { childList: true, characterData: true, subtree: true });
           }
-        });
-      }
-      
-      // Gestione Custom per Track
-      const trackSelect = document.getElementById('track-select');
-      const audioUploadInput = document.getElementById('audio-upload-input');
-      if (trackSelect && audioUploadInput) {
-        trackSelect.addEventListener('change', function(e) {
-          e.stopPropagation();
-          if (this.value === 'custom') {
-            setTimeout(() => {
-              audioUploadInput.click();
-            }, 10);
-          }
-        });
-        audioUploadInput.addEventListener('change', function(e) {
-          const file = e.target.files[0];
-          if (file && trackSelect) {
-            // Il caricamento sarà gestito da sketch.js
-            // Qui solo aggiorniamo il select per mostrare che è stato caricato
-            const option = trackSelect.querySelector('option[value="custom"]');
-            if (option) {
-              const shortName = file.name.length > 20 ? file.name.substring(0, 17) + '...' : file.name;
-              option.textContent = '📁 Custom: ' + shortName;
-            }
-            // Assicurati che il select rimanga su "custom"
-            trackSelect.value = 'custom';
-          } else {
-            // Se non c'è file, ripristina il select
-            if (trackSelect.value === 'custom') {
-              trackSelect.value = 'default';
-            }
-          }
-        });
-      }
-      
-      // Aggiorna icona play/pause
-      const playPauseBtn = document.getElementById('play-pause-btn');
-      if (playPauseBtn) {
-        const icon = playPauseBtn.querySelector('i');
-        const text = playPauseBtn.querySelector('span');
-        // Questo sarà aggiornato dinamicamente da sketch.js
-        const observer = new MutationObserver(() => {
-          const isPlaying = text.textContent === 'Pause';
-          icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
-        });
-        observer.observe(text, { childList: true, characterData: true, subtree: true });
-      }
-      
+        }
       });
     </script>
   </body>
-</html> 
+</html>
