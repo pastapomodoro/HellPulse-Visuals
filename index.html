@@ -4,170 +4,354 @@
     <meta charset="UTF-8" />
     <title>HellPulse Visuals</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
-    <!-- Using HTML5 Audio + Web Audio API for better compatibility -->
-    <link rel="stylesheet" href="style.css?v=10" />
-    <style>
-      /* Critical: Hide file inputs but keep them functional */
-      #audio-upload-input,
-      #background-upload-input,
-      #subject-upload-input {
-        position: absolute !important;
-        left: -9999px !important;
-        top: -9999px !important;
-        opacity: 0 !important;
+
+    <script type="importmap">
+    {
+      "imports": {
+        "three":         "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
       }
-    </style>
+    }
+    </script>
+
+    <link rel="stylesheet" href="style.css" />
     <link rel="icon" type="image/png" href="HellPulse.png" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
   </head>
+
   <body>
     <main id="main-area">
+
+      <!-- ════ CANVAS ════ -->
       <div id="demon-frame">
-        <div id="frame-border">
-          <div id="frame-inner">
-            <div id="canvas-container">
-              <!-- Canvas creata da p5.js -->
-            </div>
-          </div>
+        <div id="frame-inner">
+          <div id="canvas-container"></div>
         </div>
       </div>
-      
-      <div id="gui-bar">
-        <div id="track-title"></div>
-        <div id="controls-row">
-          <!-- Play/Pause -->
-          <div class="control-group">
-            <button id="play-pause-btn" class="control-btn primary">
-              <i class="fas fa-play"></i> <span>Play</span>
+
+      <!-- ════ VJ CONTROL PANEL ════ -->
+      <div id="vj-panel">
+
+        <!-- ── ROW A: Transport + BPM + Scenes + Colors ── -->
+        <div class="vj-row row-a">
+
+          <!-- Transport -->
+          <div class="vj-group">
+            <button id="play-pause-btn" class="vj-btn primary">
+              <i class="fas fa-play"></i><span>PLAY</span>
+            </button>
+            <label for="audio-upload-input" class="vj-btn file-lbl" id="upload-track-btn">
+              <i class="fas fa-upload"></i><span>FILE</span>
+            </label>
+            <input id="audio-upload-input" type="file" accept="audio/*" class="hidden-input" />
+            <button id="soundcloud-btn" class="vj-btn sc">
+              <i class="fab fa-soundcloud"></i>
             </button>
           </div>
-          
-          <!-- Track Upload -->
-          <div class="control-group">
-            <label for="audio-upload-input" class="control-btn file-label" id="upload-track-btn">
-              <i class="fas fa-upload"></i> <span>File</span>
-            </label>
-            <input id="audio-upload-input" type="file" accept="audio/*" />
+
+          <!-- BPM -->
+          <div class="vj-group bpm-grp">
+            <div class="bpm-block">
+              <span class="bpm-label">BPM</span>
+              <span id="bpm-readout">---</span>
+            </div>
+            <button id="tap-tempo-btn" class="vj-btn tap">TAP</button>
           </div>
-          
-          <!-- SoundCloud -->
-          <div class="control-group">
-            <button id="soundcloud-btn" class="control-btn soundcloud">
-              <i class="fab fa-soundcloud"></i> SoundCloud
+
+          <!-- Scenes -->
+          <div class="vj-group scenes-grp">
+            <span class="grp-lbl">SCENE</span>
+            <button class="scene-btn active" data-scene="vortex">VORTEX</button>
+            <button class="scene-btn" data-scene="rave">PULSE</button>
+            <button class="scene-btn" data-scene="grid">GRID</button>
+            <button class="scene-btn" data-scene="chaos">CHAOS</button>
+            <button class="scene-btn" data-scene="chill">CHILL</button>
+          </div>
+
+          <!-- Colors -->
+          <div class="vj-group colors-grp">
+            <span class="grp-lbl">COLOR</span>
+            <button class="palette-btn active" data-palette="tekno" style="--pc:#00ffff">TEKNO</button>
+            <button class="palette-btn" data-palette="acid"       style="--pc:#00ff44">ACID</button>
+            <button class="palette-btn" data-palette="rave"       style="--pc:#ff00cc">PINK</button>
+            <button class="palette-btn" data-palette="industrial" style="--pc:#ff3300">METAL</button>
+            <button class="palette-btn" data-palette="mono"       style="--pc:#ffffff">MONO</button>
+          </div>
+
+          <!-- MIDI -->
+          <div class="vj-group midi-grp">
+            <button id="midi-btn" class="vj-btn midi-btn">
+              <i class="fas fa-plug"></i> MIDI
             </button>
-          </div>
-          
-          <!-- Background Select -->
-          <div class="control-group select-with-upload">
-            <select id="background-select" class="control-select">
-              <option value="none">Sfondo: Nessuno</option>
-              <option value="bg1.gif">Sfondo: BG 1</option>
-              <option value="bg2.gif">Sfondo: BG 2</option>
-              <option value="bg3.gif">Sfondo: BG 3</option>
-            </select>
-            <label for="background-upload-input" class="upload-icon" title="Carica sfondo custom">
-              <i class="fas fa-folder-open"></i>
-            </label>
-            <input id="background-upload-input" type="file" accept="image/*" />
-          </div>
-          
-          <!-- Subject Select -->
-          <div class="control-group select-with-upload">
-            <select id="subject-select" class="control-select">
-              <option value="gengar.png">Soggetto: Gengar</option>
-              <option value="tribalHeart.png">Soggetto: Heart</option>
-              <option value="HellPulse.png">Soggetto: HellPulse</option>
-            </select>
-            <label for="subject-upload-input" class="upload-icon" title="Carica soggetto custom">
-              <i class="fas fa-folder-open"></i>
-            </label>
-            <input id="subject-upload-input" type="file" accept="image/*" />
-          </div>
-          
-          <!-- Toggles -->
-          <div class="control-group">
-            <label class="toggle-label">
-              <input type="checkbox" id="effects-toggle" checked />
-              <span class="toggle-text">FX</span>
-            </label>
-          </div>
-          
-          <div class="control-group">
-            <label class="toggle-label">
-              <input type="checkbox" id="sync-toggle" />
-              <span class="toggle-text">Sync</span>
-              <span id="bpm-readout" class="bpm-badge">--</span>
-            </label>
-          </div>
-          
-          <!-- Volume -->
-          <div class="control-group collapsible">
-            <button class="collapsible-btn" data-target="volume-panel">
-              <i class="fas fa-volume-up"></i> Vol
-              <i class="fas fa-chevron-down"></i>
+            <button id="midimix-btn" class="vj-btn midimix-btn" title="Apply AKAI MIDImix default mapping">
+              MIDImix
             </button>
-            <div class="collapsible-content" id="volume-panel">
-              <label>Volume</label>
-              <input id="volume-slider" type="range" min="0" max="1" step="0.01" value="0.5" />
-              <label class="toggle-label" style="margin-top: 12px;">
-                <input type="checkbox" id="mute-toggle" />
-                <span class="toggle-text">Mute</span>
-              </label>
+            <span id="midi-status" class="midi-status">--</span>
+          </div>
+
+        </div><!-- end row-a -->
+
+        <!-- ── ROW B: Effect Matrix ── -->
+        <div class="vj-row row-b">
+          <div class="vj-matrix">
+
+            <!-- TUNNEL -->
+            <div class="vj-cell cell-on" data-effect="tunnel">
+              <div class="cell-head">
+                <button class="cell-led-btn" data-effect="tunnel"><span class="cell-led"></span></button>
+                <span class="cell-name">TUNNEL</span>
+              </div>
+              <div class="cell-knobs">
+                <div class="vj-knob" data-param="tunnelSpeed" data-color="#00ffff">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">SPEED</span><span class="kv">1.00</span>
+                </div>
+                <div class="vj-knob" data-param="tunnelGlow" data-color="#00ffff">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">GLOW</span><span class="kv">0.55</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- SPHERE -->
+            <div class="vj-cell" data-effect="sphere">
+              <div class="cell-head">
+                <button class="cell-led-btn" data-effect="sphere"><span class="cell-led"></span></button>
+                <span class="cell-name">SPHERE</span>
+              </div>
+              <div class="cell-knobs">
+                <div class="vj-knob" data-param="sphereSize" data-color="#00ffff">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">SIZE</span><span class="kv">1.00</span>
+                </div>
+                <div class="vj-knob" data-param="sphereSpeed" data-color="#00ffff">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">SPEED</span><span class="kv">0.50</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- STORM -->
+            <div class="vj-cell cell-on" data-effect="particles">
+              <div class="cell-head">
+                <button class="cell-led-btn" data-effect="particles"><span class="cell-led"></span></button>
+                <span class="cell-name">STORM</span>
+              </div>
+              <div class="cell-knobs">
+                <div class="vj-knob" data-param="stormSpeed" data-color="#00ffff">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">SPEED</span><span class="kv">1.00</span>
+                </div>
+                <div class="vj-knob" data-param="stormSize" data-color="#00ffff">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">SIZE</span><span class="kv">1.00</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- WAVE -->
+            <div class="vj-cell cell-on" data-effect="waveform">
+              <div class="cell-head">
+                <button class="cell-led-btn" data-effect="waveform"><span class="cell-led"></span></button>
+                <span class="cell-name">WAVE</span>
+              </div>
+              <div class="cell-knobs">
+                <div class="vj-knob" data-param="waveRadius" data-color="#00ffff">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">RADIUS</span><span class="kv">3.20</span>
+                </div>
+                <div class="vj-knob" data-param="waveSens" data-color="#00ffff">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">SENS</span><span class="kv">1.00</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- BARS -->
+            <div class="vj-cell" data-effect="bars">
+              <div class="cell-head">
+                <button class="cell-led-btn" data-effect="bars"><span class="cell-led"></span></button>
+                <span class="cell-name">BARS</span>
+              </div>
+              <div class="cell-knobs">
+                <div class="vj-knob" data-param="barsHeight" data-color="#ff00ff">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">HEIGHT</span><span class="kv">1.00</span>
+                </div>
+                <div class="vj-knob" data-param="barsScale" data-color="#ff00ff">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">SCALE</span><span class="kv">1.00</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- GRID -->
+            <div class="vj-cell" data-effect="grid">
+              <div class="cell-head">
+                <button class="cell-led-btn" data-effect="grid"><span class="cell-led"></span></button>
+                <span class="cell-name">GRID</span>
+              </div>
+              <div class="cell-knobs">
+                <div class="vj-knob" data-param="gridSpeed" data-color="#ff00ff">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">SPEED</span><span class="kv">1.00</span>
+                </div>
+                <div class="vj-knob" data-param="gridGlow" data-color="#ff00ff">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">GLOW</span><span class="kv">0.70</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- BLOOM -->
+            <div class="vj-cell cell-on cell-postfx" data-effect="bloom-fx">
+              <div class="cell-head">
+                <span class="cell-led cell-led-always"></span>
+                <span class="cell-name">BLOOM</span>
+              </div>
+              <div class="cell-knobs">
+                <div class="vj-knob" data-param="bloomStrength" data-color="#ffaa00">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">POWER</span><span class="kv">1.50</span>
+                </div>
+                <div class="vj-knob" data-param="bloomRadius" data-color="#ffaa00">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">RADIUS</span><span class="kv">0.40</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- GLITCH -->
+            <div class="vj-cell cell-postfx" data-effect="glitch-fx">
+              <div class="cell-head">
+                <span class="cell-led cell-led-always"></span>
+                <span class="cell-name">GLITCH</span>
+              </div>
+              <div class="cell-knobs">
+                <div class="vj-knob" data-param="glitchAmt" data-color="#ff3300">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">AMT</span><span class="kv">0.00</span>
+                </div>
+                <div class="cell-extra">
+                  <label class="strobe-lbl">
+                    <input type="checkbox" id="strobe-toggle" />
+                    <span class="strobe-dot"></span>
+                    <span>STROBE</span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- CHROMA -->
+            <div class="vj-cell cell-postfx" data-effect="chroma-fx">
+              <div class="cell-head">
+                <span class="cell-led cell-led-always"></span>
+                <span class="cell-name">CHROMA</span>
+              </div>
+              <div class="cell-knobs">
+                <div class="vj-knob" data-param="chromaAmt" data-color="#ff3300">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">AMT</span><span class="kv">0.00</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- FEEDBACK -->
+            <div class="vj-cell cell-postfx" data-effect="feedback-fx">
+              <div class="cell-head">
+                <span class="cell-led cell-led-always"></span>
+                <span class="cell-name">FEEDBACK</span>
+              </div>
+              <div class="cell-knobs">
+                <div class="vj-knob" data-param="feedbackAmt" data-color="#aa00ff">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">AMT</span><span class="kv">0.00</span>
+                </div>
+                <div class="vj-knob" data-param="feedbackZoom" data-color="#aa00ff">
+                  <svg viewBox="0 0 44 44"></svg>
+                  <span class="kl">ZOOM</span><span class="kv">1.01</span>
+                </div>
+              </div>
+            </div>
+
+          </div><!-- end matrix -->
+        </div><!-- end row-b -->
+
+        <!-- ── ROW C: Master + Media + Seek ── -->
+        <div class="vj-row row-c">
+
+          <!-- Master Volume knob -->
+          <div class="vj-group master-grp">
+            <span class="grp-lbl">MASTER</span>
+            <div class="vj-knob" data-param="masterVolume" data-color="#ffffff">
+              <svg viewBox="0 0 44 44"></svg>
+              <span class="kl">VOL</span><span class="kv">0.80</span>
+            </div>
+            <label class="mute-lbl">
+              <input type="checkbox" id="mute-toggle" />
+              <span class="mute-dot"></span>
+              <span>MUTE</span>
+            </label>
+          </div>
+
+          <!-- Media -->
+          <div class="vj-group media-grp">
+            <span class="grp-lbl">MEDIA</span>
+            <div class="select-with-upload">
+              <select id="subject-select" class="vj-select">
+                <option value="none">— Nessuno —</option>
+                <option value="HellPulse.png">HellPulse</option>
+              </select>
+              <label for="subject-upload-input" class="upload-icon" title="Carica immagine"><i class="fas fa-folder-open"></i></label>
+              <input id="subject-upload-input" type="file" accept="image/*" class="hidden-input" />
+              <label for="obj-upload-input" class="upload-icon" title="Carica modello 3D (.obj)"><i class="fas fa-cube"></i></label>
+              <input id="obj-upload-input" type="file" accept=".obj" class="hidden-input" />
+            </div>
+            <div class="select-with-upload">
+              <select id="background-select" class="vj-select">
+                <option value="none">BG: None</option>
+                <option value="bg1.gif">BG 1</option>
+                <option value="bg2.gif">BG 2</option>
+                <option value="bg3.gif">BG 3</option>
+              </select>
+              <label for="background-upload-input" class="upload-icon"><i class="fas fa-folder-open"></i></label>
+              <input id="background-upload-input" type="file" accept="image/*" class="hidden-input" />
             </div>
           </div>
-          
-          <!-- Glitch -->
-          <div class="control-group collapsible">
-            <button class="collapsible-btn" data-target="glitch-panel">
-              <i class="fas fa-bolt"></i> Glitch
-              <i class="fas fa-chevron-down"></i>
-            </button>
-            <div class="collapsible-content" id="glitch-panel">
-              <label>Intensità Glitch</label>
-              <input id="glitch-slider" class="colorful-glitch" type="range" min="0" max="1" step="0.01" value="0" />
-            </div>
-          </div>
-          
+
           <!-- Seek -->
-          <div class="control-group collapsible">
-            <button class="collapsible-btn" data-target="seek-panel">
-              <i class="fas fa-sliders-h"></i> Seek
-              <i class="fas fa-chevron-down"></i>
-            </button>
-            <div class="collapsible-content" id="seek-panel">
-              <label>Posizione Track</label>
-              <input id="seek-slider" type="range" min="0" max="1" step="0.001" value="0" />
-            </div>
+          <div class="vj-group seek-grp">
+            <span class="grp-lbl">SEEK</span>
+            <input id="seek-slider" type="range" min="0" max="1" step="0.001" value="0" class="seek-bar" />
           </div>
-        </div>
-      </div>
+
+        </div><!-- end row-c -->
+
+      </div><!-- end vj-panel -->
     </main>
-    
+
     <!-- SoundCloud Modal -->
     <div id="soundcloud-modal" class="modal hidden">
       <div class="modal-content">
         <div class="modal-header">
-          <h3><i class="fab fa-soundcloud"></i> Carica da SoundCloud</h3>
+          <h3><i class="fab fa-soundcloud"></i> SoundCloud</h3>
           <button id="modal-close" class="modal-close">&times;</button>
         </div>
         <div class="modal-body">
-          <p class="modal-hint">Incolla un link di una traccia SoundCloud</p>
+          <p class="modal-hint">URL traccia SoundCloud</p>
           <input type="text" id="soundcloud-url" placeholder="https://soundcloud.com/artist/track" />
-          <button id="soundcloud-load" class="control-btn primary">
-            <i class="fas fa-play"></i> Carica e Riproduci
+          <button id="soundcloud-load" class="vj-btn primary">
+            <i class="fas fa-play"></i> Carica
           </button>
-          <p class="modal-note">
-            <i class="fas fa-info-circle"></i> Nota: per restrizioni CORS, il visualizzatore reagirà al BPM stimato. Per reazioni audio complete, usa un file locale.
-          </p>
+          <p class="modal-note"><i class="fas fa-info-circle"></i> Analisi audio completa solo con file locale.</p>
           <p id="soundcloud-error" class="modal-error"></p>
         </div>
       </div>
     </div>
-    
-    <!-- SoundCloud Widget API (hidden) -->
-    <iframe id="soundcloud-widget" allow="autoplay" style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;"></iframe>
-    
+
+    <iframe id="soundcloud-widget" allow="autoplay"
+      style="position:fixed;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;pointer-events:none;"></iframe>
+
     <!-- Footer -->
     <footer id="site-footer">
       <div class="footer-content">
@@ -176,162 +360,14 @@
           <span class="footer-title">HellPulse Visuals</span>
         </div>
         <nav class="footer-links">
-          <a href="https://github.com/pastapomodoro/HellPulse-Visuals" target="_blank" rel="noopener">
-            <i class="fab fa-github"></i> GitHub
-          </a>
-          <a href="https://instagram.com/benzodiazepics" target="_blank" rel="noopener">
-            <i class="fab fa-instagram"></i> Instagram
-          </a>
-          <a href="https://ko-fi.com/ugiex" target="_blank" rel="noopener">
-            <i class="fas fa-heart"></i> Support
-          </a>
+          <a href="https://github.com/pastapomodoro/HellPulse-Visuals" target="_blank" rel="noopener"><i class="fab fa-github"></i> GitHub</a>
+          <a href="https://instagram.com/benzodiazepics" target="_blank" rel="noopener"><i class="fab fa-instagram"></i> Instagram</a>
+          <a href="https://ko-fi.com/ugiex" target="_blank" rel="noopener"><i class="fas fa-heart"></i> Support</a>
         </nav>
-        <div class="footer-credit">
-          Made by <a href="https://instagram.com/eugeniobellini" target="_blank" rel="noopener">@eugeniobellini</a>
-        </div>
+        <div class="footer-credit">Made by <a href="https://instagram.com/eugeniobellini" target="_blank" rel="noopener">@eugeniobellini</a></div>
       </div>
     </footer>
-    
-    <script src="sketch.js?v=20260123i"></script>
-    <script>
-      document.addEventListener('DOMContentLoaded', function() {
-        // Hide file inputs (CSS backup)
-        ['audio-upload-input', 'background-upload-input', 'subject-upload-input'].forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.style.display = 'none';
-        });
-        
-        // Collapsible panels
-        document.querySelectorAll('.collapsible-btn').forEach(btn => {
-          btn.addEventListener('click', function(e) {
-            e.stopPropagation();
-            const targetId = this.getAttribute('data-target');
-            const panel = document.getElementById(targetId);
-            const icon = this.querySelector('.fa-chevron-down, .fa-chevron-up');
-            
-            // Close all other panels
-            document.querySelectorAll('.collapsible-content').forEach(p => {
-              if (p.id !== targetId) {
-                p.style.display = 'none';
-              }
-            });
-            document.querySelectorAll('.collapsible-btn').forEach(b => {
-              if (b !== this) {
-                const i = b.querySelector('.fa-chevron-up');
-                if (i) {
-                  i.classList.remove('fa-chevron-up');
-                  i.classList.add('fa-chevron-down');
-                }
-              }
-            });
-            
-            // Toggle current panel
-            if (panel.style.display === 'block') {
-              panel.style.display = 'none';
-              if (icon) {
-                icon.classList.remove('fa-chevron-up');
-                icon.classList.add('fa-chevron-down');
-              }
-            } else {
-              panel.style.display = 'block';
-              if (icon) {
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-up');
-              }
-            }
-          });
-        });
-        
-        // Close panels when clicking outside
-        document.addEventListener('click', function(e) {
-          if (!e.target.closest('.collapsible')) {
-            document.querySelectorAll('.collapsible-content').forEach(p => {
-              p.style.display = 'none';
-            });
-            document.querySelectorAll('.collapsible-btn .fa-chevron-up').forEach(i => {
-              i.classList.remove('fa-chevron-up');
-              i.classList.add('fa-chevron-down');
-            });
-          }
-        });
-        
-        // Upload Track - using label so click is handled natively
-        const uploadTrackLabel = document.getElementById('upload-track-btn');
-        const audioUploadInput = document.getElementById('audio-upload-input');
-        if (audioUploadInput && uploadTrackLabel) {
-          audioUploadInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file) {
-              // Update label text to show loaded file
-              const shortName = file.name.length > 15 ? file.name.substring(0, 12) + '...' : file.name;
-              uploadTrackLabel.innerHTML = '<i class="fas fa-music"></i> <span>' + shortName + '</span>';
-            }
-          });
-        }
-        
-        // Background Upload - using label so click is handled natively
-        const backgroundSelect = document.getElementById('background-select');
-        const backgroundUploadInput = document.getElementById('background-upload-input');
-        if (backgroundUploadInput) {
-          backgroundUploadInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file && backgroundSelect) {
-              // Add custom option if not exists
-              let customOpt = backgroundSelect.querySelector('option[value="custom"]');
-              if (!customOpt) {
-                customOpt = document.createElement('option');
-                customOpt.value = 'custom';
-                backgroundSelect.appendChild(customOpt);
-              }
-              const shortName = file.name.length > 12 ? file.name.substring(0, 9) + '...' : file.name;
-              customOpt.textContent = 'Sfondo: ' + shortName;
-              backgroundSelect.value = 'custom';
-              // Trigger change event for sketch.js
-              backgroundSelect.dispatchEvent(new Event('change'));
-            }
-          });
-        }
-        
-        // Subject Upload - using label so click is handled natively
-        const subjectSelect = document.getElementById('subject-select');
-        const subjectUploadInput = document.getElementById('subject-upload-input');
-        if (subjectUploadInput) {
-          subjectUploadInput.addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (file && subjectSelect) {
-              // Add custom option if not exists
-              let customOpt = subjectSelect.querySelector('option[value="custom"]');
-              if (!customOpt) {
-                customOpt = document.createElement('option');
-                customOpt.value = 'custom';
-                subjectSelect.appendChild(customOpt);
-              }
-              const shortName = file.name.length > 12 ? file.name.substring(0, 9) + '...' : file.name;
-              customOpt.textContent = 'Soggetto: ' + shortName;
-              subjectSelect.value = 'custom';
-              // Trigger change event for sketch.js
-              subjectSelect.dispatchEvent(new Event('change'));
-            }
-          });
-        }
-        
-        // Play/Pause icon update
-        const playPauseBtn = document.getElementById('play-pause-btn');
-        if (playPauseBtn) {
-          const observer = new MutationObserver(() => {
-            const span = playPauseBtn.querySelector('span');
-            const icon = playPauseBtn.querySelector('i');
-            if (span && icon) {
-              const isPlaying = span.textContent === 'Pause';
-              icon.className = isPlaying ? 'fas fa-pause' : 'fas fa-play';
-            }
-          });
-          const span = playPauseBtn.querySelector('span');
-          if (span) {
-            observer.observe(span, { childList: true, characterData: true, subtree: true });
-          }
-        }
-      });
-    </script>
+
+    <script type="module" src="sketch.js"></script>
   </body>
 </html>
